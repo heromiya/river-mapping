@@ -36,7 +36,6 @@ Result_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'result_mo
 Utils_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'utils')
 Log_name = 'area_binary_log.csv'
 
-
 def rescale(img):
     percent = 2
     pLow, pHigh = np.percentile(img[img>0], (percent, 100-percent))
@@ -177,8 +176,8 @@ def main(args):
         .checkpoints: pretrained pytorch model
         .data: data path for prediction
     """
-    Data_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', args.data)
-    Anno_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src', args.data + '_anno')
+    Data_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.data)
+    Anno_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.data + '_anno')
 
     if args.cuda and not torch.cuda.is_available():
         raise ValueError("GPUs are not available, please run at cpu mode")
