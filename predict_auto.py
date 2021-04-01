@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 """
   @CreateTime:   2018-01-26T16:50:00+09:00
   @Email:  guangmingwu2010@gmail.com
@@ -20,7 +19,7 @@ import sys
 sys.path.append('/usr/lib/python3/dist-packages/')
 # sys.path.append('/usr/lib/python3/dist-packages/osgeo')
 # sys.path.append('/home/guo/anaconda3/lib/python3.6/site-packages/imageio/plugins')
-# import gdal
+import gdal
 
 from skimage.morphology import medial_axis, skeletonize
 from skimage import feature
@@ -70,30 +69,30 @@ def save_log(log_results):
     logs.to_csv("{}/logs/{}".format(Result_DIR, Log_name), index=False, float_format='%.3f')
 
 
-# def geo_projection(input, output):
-#     dataset = gdal.Open(input)
-#     if dataset is None:
-#         print('Unable to open', input, 'for reading')
-#         sys.exit(1)
-#
-#     projection = dataset.GetProjection()
-#     geotransform = dataset.GetGeoTransform()
-#
-#     if projection is None and geotransform is None:
-#         print('No projection or geotransform found on file' + input)
-#         sys.exit(1)
-#
-#     dataset2 = gdal.Open(output, gdal.GA_Update)
-#
-#     if dataset2 is None:
-#         print('Unable to open', output, 'for writing')
-#         sys.exit(1)
-#
-#     if geotransform is not None:
-#         dataset2.SetGeoTransform(geotransform)
-#
-#     if projection is not None:
-#         dataset2.SetProjection(projection)
+def geo_projection(input, output):
+    dataset = gdal.Open(input)
+    if dataset is None:
+        print('Unable to open', input, 'for reading')
+        sys.exit(1)
+
+    projection = dataset.GetProjection()
+    geotransform = dataset.GetGeoTransform()
+
+    if projection is None and geotransform is None:
+        print('No projection or geotransform found on file' + input)
+        sys.exit(1)
+
+    dataset2 = gdal.Open(output, gdal.GA_Update)
+
+    if dataset2 is None:
+        print('Unable to open', output, 'for writing')
+        sys.exit(1)
+
+    if geotransform is not None:
+        dataset2.SetGeoTransform(geotransform)
+
+    if projection is not None:
+        dataset2.SetProjection(projection)
 
 def get_results_all():
     """
@@ -152,15 +151,15 @@ def get_results_all():
         dist_norm = (dist_on_skel - np.min(dist_on_skel)) / (np.max(dist_on_skel) - np.min(dist_on_skel))
         delineate_norm = np.clip(((edges2 + dist_norm) * 255).astype(np.uint8), 0, 255)
         imsave(os.path.join(delineate_norm_dir, img_name), delineate_norm)
-        # geo_projection(img_path, os.path.join(delineate_norm_dir, img_name))
+        geo_projection(img_path, os.path.join(delineate_norm_dir, img_name))
 
         width = (dist_on_skel * 2).astype(np.int8)
         imsave(os.path.join(width_dir, img_name), width)
-        # geo_projection(img_path, os.path.join(width_dir, img_name))
+        geo_projection(img_path, os.path.join(width_dir, img_name))
 
         delineate = np.clip((edges2 * 255 + width).astype(np.uint8), 0, 255)
         imsave(os.path.join(delineate_dir, img_name), delineate)
-        # geo_projection(img_path, os.path.join(delineate_dir, img_name))
+        geo_projection(img_path, os.path.join(delineate_dir, img_name))
 
     try:
         model_names = list(set(model_names))
@@ -185,6 +184,7 @@ def main(args):
         raise ValueError("GPUs are not available, please run at cpu mode")
     if not os.path.exists(os.path.join(Result_DIR, 'area-binary')):
         os.makedirs(os.path.join(Result_DIR, 'area-binary'))
+
 
     # read and align image
     if args.test_all == True:
@@ -223,7 +223,7 @@ def main(args):
         src_img_red = np.expand_dims(src_img[:, :, 2], -1)
         src_img_nir = np.expand_dims(src_img[:, :, 3], -1)
 
-        img_new = np.concatenate((src_img_green, src_img_red, src_img_nir), -1)
+        img_new = np.concatenate((src_img_nir, src_img_red, src_img_green), -1)
         src_img = rescale(img_new)
 
         if args.border_remain:
@@ -327,9 +327,9 @@ def main(args):
 
             imsave(os.path.join(Result_DIR, 'area-binary', name), result_img)
             print("Saving {} ...".format(name))
-
-            # if args.georef:
-                # geo_projection(img_path, os.path.join(Result_DIR, 'area-binary', name))
+            #import pdb; pdb.set_trace()
+            if args.georef:
+                geo_projection(img_path, os.path.join(Result_DIR, 'area-binary', name))
 
 
             if ANNO:
@@ -396,8 +396,8 @@ def main(args):
 
                 imsave(os.path.join(Result_DIR, 'area-binary', name), result_mask_img)
 
-                # if args.georef:
-                    # geo_projection(img_path, os.path.join(Result_DIR, 'area-binary', name))
+                if args.georef:
+                    geo_projection(img_path, os.path.join(Result_DIR, 'area-binary', name))
 
                 print("Saving {} ...".format(name))
 
@@ -451,5 +451,4 @@ if __name__ == "__main__":
     parser.add_argument('-cuda', type=lambda x: (str(x).lower() == 'true'), default=True,
                         help='using cuda for optimization')
     args = parser.parse_args()
-
     main(args)
