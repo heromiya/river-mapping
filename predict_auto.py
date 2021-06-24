@@ -39,7 +39,7 @@ Log_name = 'area_binary_log.csv'
 def rescale(img):
     percent = 2
     pLow, pHigh = np.percentile(img[img>0], (percent, 100-percent))
-    img_rescaled = exposure.rescale_intensity(img, in_range=(pLow, pHigh))
+    img_rescaled = exposure.rescale_intensity(img, in_range=(pLow, pHigh), out_range='uint16')
     return img_rescaled
 
 def load_recent_checkpoint(checkpoint_dir):
@@ -184,224 +184,120 @@ def main(args):
     if not os.path.exists(os.path.join(Result_DIR, 'area-binary')):
         os.makedirs(os.path.join(Result_DIR, 'area-binary'))
 
-
     # read and align image
-    if args.test_all == True:
-        img_names = [os.path.basename(full_name) for full_name in glob.glob(Data_DIR + '/*')]
-    else:
-        img_names = args.img_names
+    src_img = imread(args.test_img)
 
-    if args.load_recent:
-        checkpoint = load_recent_checkpoint(Checkpoint_DIR)
-        args.checkpoints = []
-        args.checkpoints.append(checkpoint)
+    src_img_green = np.expand_dims(src_img[:, :, 2], -1)
+    src_img_red = np.expand_dims(src_img[:, :, 3], -1)
+    src_img_nir = np.expand_dims(src_img[:, :, 4], -1)
 
-    # mosaic_dict = json.load(open('./temp/mosaic_dict.json'))
+    img_new = np.concatenate((src_img_nir, src_img_red, src_img_green), -1)
+    src_img = rescale(img_new)
 
-    # mosaic_dates = list(mosaic_dict.keys())
+    if args.border_remain:
+        if len(src_img.shape) == 2:
+            _img_rows, _img_cols = src_img.shape
+        else:
+            _img_rows, _img_cols, _img_ch = src_img.shape
+            
+        _img_dtype = src_img.dtype
+        if _img_rows // args.img_rows != 0:
+            _img_rows_new = (_img_rows // args.img_rows + 1) * args.img_rows
+        else:
+            _img_rows_new = _img_rows
+        if _img_cols // args.img_cols != 0:
+            _img_cols_new = (_img_cols // args.img_cols + 1) * args.img_cols
+        else:
+            _img_cols_new = _img_cols
+        if len(src_img.shape) == 2:
+            img_new = np.empty((_img_rows_new, _img_cols_new), _img_dtype)
+        else:
+            img_new = np.empty((_img_rows_new, _img_cols_new, _img_ch), _img_dtype)
 
-    for img_name in pbar(img_names):
-        if img_name.endswith('.tfw') or img_name.endswith('.xml'):
-            continue
-        # if img_name.split('.')[0] not in mosaic_dates:
-        #     print('%s not in date dictionary'%(img_name.split('.')[0]))
-        #     continue
-        # landsat_idx = mosaic_dict[img_name.split('.')[0]]
-
-        print("===> Image {}/{}: {},    \r".format((img_names.index(img_name) + 1), \
-                                                   (len(img_names)), img_name, ))
-        anno_name = img_name
-        ANNO = False
-        if os.path.exists(Anno_DIR):
-            if anno_name in os.listdir(Anno_DIR):
-                ANNO = True
-        img_path = os.path.join(Data_DIR, img_name)
-        src_img = imread(img_path)
-
-        src_img_green = np.expand_dims(src_img[:, :, 1], -1)
-        src_img_red = np.expand_dims(src_img[:, :, 2], -1)
-        src_img_nir = np.expand_dims(src_img[:, :, 3], -1)
-
-        img_new = np.concatenate((src_img_nir, src_img_red, src_img_green), -1)
-        src_img = rescale(img_new)
-
-        if args.border_remain:
-            if len(src_img.shape) == 2:
-                _img_rows, _img_cols = src_img.shape
-            else:
-                _img_rows, _img_cols, _img_ch = src_img.shape
-            _img_dtype = src_img.dtype
-            if _img_rows // args.img_rows != 0:
-                _img_rows_new = (_img_rows // args.img_rows + 1) * args.img_rows
-            else:
-                _img_rows_new = _img_rows
-            if _img_cols // args.img_cols != 0:
-                _img_cols_new = (_img_cols // args.img_cols + 1) * args.img_cols
-            else:
-                _img_cols_new = _img_cols
-            if len(src_img.shape) == 2:
-                img_new = np.empty((_img_rows_new, _img_cols_new), _img_dtype)
-            else:
-                img_new = np.empty((_img_rows_new, _img_cols_new, _img_ch), _img_dtype)
-            img_new[:_img_rows, :_img_cols] = src_img
-            src_img = img_new
+        img_new[:_img_rows, :_img_cols] = src_img
+        src_img = img_new
 
         if len(src_img.shape) == 2:
             src_img = (np.expand_dims(src_img, -1) / 255)
 
         x_slices, x_shapes = vision.img_to_slices(
             src_img, args.img_rows, args.img_cols)
-        #        print(x_slices.shape)
+
         x_slices = np.array(x_slices)
-
-        for checkpoint in args.checkpoints:
-            # load models
-            model = load_checkpoint(checkpoint)
-            if args.cuda:
-                model.cuda()
-            model.eval()
-            # predict by batch
-            y_preds = []
-            steps = x_slices.shape[0] // args.batch_size
-            if (x_slices.shape[0] % args.batch_size) == 0:
-                step_range = steps
+        
+        checkpoint = args.checkpoint[0]
+        model = torch.load(checkpoint)
+        if args.cuda:
+            model.cuda()
+        model.eval()
+            
+        # predict by batch
+        y_preds = []
+        steps = x_slices.shape[0] // args.batch_size
+        if (x_slices.shape[0] % args.batch_size) == 0:
+            step_range = steps
+        else:
+            step_range = steps + 1
+            
+        for step in range(step_range):
+            if step < steps:
+                x = x_slices[step *
+                             args.batch_size:(step + 1) * args.batch_size]
             else:
-                step_range = steps + 1
-            for step in range(step_range):
-                print("Predicting by {} at {}/{} \r".format(checkpoint,
-                                                            (step + 1), (step_range)))
-                if step < steps:
-                    x = x_slices[step *
-                                 args.batch_size:(step + 1) * args.batch_size]
-                else:
-                    x = x_slices[step * args.batch_size:]
-                x = (x / 255).transpose((0, 3, 1, 2)).astype('float32')
-                x = torch.tensor(x)
-                if args.cuda:
-                    x = x.cuda()
-                # TODO:
-                if checkpoint.startswith("SR"):
-                    x = x.resize_(32, 3, 112, 112)
-                # generate prediction
-                y_pred = model(x)
-                if args.cuda:
-                    y_pred = y_pred.data.cpu().numpy()
-                else:
-                    y_pred = y_pred.data.numpy()
-                y_preds.append(y_pred)
-            y_preds = np.concatenate(y_preds)
-            results = []
-            for i in range(y_preds.shape[0]):
-                pred_img = y_preds[i].transpose((1, 2, 0))
-                pred_img[pred_img >= 0.5] = 255
-                pred_img[pred_img < 0.5] = 0
+                x = x_slices[step * args.batch_size:]
+                
+            x = (x / 255).transpose((0, 3, 1, 2)).astype('float32')
+            x = torch.tensor(x)
+            
+            if args.cuda:
+                x = x.cuda()
 
-                if args.target == 'edge':
-                    # extract edges from segmentation map
-                    pred_img = vision.shift_edge(pred_img, dtype="float32")
-                    pred_img = np.argmax(pred_img, axis=-1) * 23
-                    pred_img = np.expand_dims(pred_img, -1).astype("uint8")
-                    pred_rgb = np.concatenate(
-                        [pred_img, pred_img, pred_img], axis=-1)
-                results.append(pred_img)
-            del y_preds
+            y_pred = model(x)
+            if args.cuda:
+                y_pred = y_pred.data.cpu().numpy()
+            else:
+                y_pred = y_pred.data.numpy()
+                
+            y_preds.append(y_pred)
+            
+        y_preds = np.concatenate(y_preds)
+        results = []
+                
+        for i in range(y_preds.shape[0]):
+            pred_img = y_preds[i].transpose((1, 2, 0))
+            pred_img[pred_img >= 0.5] = 255
+            pred_img[pred_img < 0.5] = 0
 
-            # merge slices into image
-            result_img = vision.slices_to_img(results, x_shapes)
-            del results
-            result_img = np.squeeze(result_img)
-            name = "{}_area_{}_{}.tif".format(
-                os.path.splitext(img_name)[0], args.target, checkpoint.strip('.pth'))
+            if args.target == 'edge':
+                # extract edges from segmentation map
+                pred_img = vision.shift_edge(pred_img, dtype="float32")
+                pred_img = np.argmax(pred_img, axis=-1) * 23
+                pred_img = np.expand_dims(pred_img, -1).astype("uint8")
+                pred_rgb = np.concatenate(
+                    [pred_img, pred_img, pred_img], axis=-1)
+            results.append(pred_img)
+        del y_preds
 
-            if args.border_remain:
-                result_img = result_img[:_img_rows, :_img_cols]
+        # merge slices into image
+        result_img = vision.slices_to_img(results, x_shapes)
+        del results
+        result_img = np.squeeze(result_img)
+        name = "{}_area_{}_{}.tif".format(
+            os.path.basename(args.test_img), args.target, os.path.basename(checkpoint.strip('.pth')))
 
-            if args.centerline:
-                image = result_img // 255
-                skeleton = skeletonize(image)
-                centerline_name = "{}_area_centerline_{}.jpg".format(
-                    os.path.splitext(img_name)[0], checkpoint.strip('.pth'))
+        if args.border_remain:
+            result_img = result_img[:_img_rows, :_img_cols]
 
-                imsave(os.path.join(Result_DIR, 'area-binary', centerline_name), skeleton*255)
+        if args.centerline:
+            image = result_img // 255
+            skeleton = skeletonize(image)
+            centerline_name = "{}_area_centerline_{}.jpg".format(
+                os.path.basename(args.test_img), os.path.basename(checkpoint.strip('.pth')))
+            imsave(os.path.join(Result_DIR, 'area-binary', centerline_name), skeleton*255)
 
-            imsave(os.path.join(Result_DIR, 'area-binary', name), result_img)
-            print("Saving {} ...".format(name))
-            #import pdb; pdb.set_trace()
-            if args.georef:
-                geo_projection(img_path, os.path.join(Result_DIR, 'area-binary', name))
+        imsave(args.test_pred, result_img)
+        geo_projection(args.test_img, args.test_pred)
 
-
-            if ANNO:
-                tar_img = imread(os.path.join(Anno_DIR, anno_name))
-                tar_img = tar_img[:result_img.shape[0], :result_img.shape[1]]
-
-                if args.border_remain:
-                    _tar_img_dtype = tar_img.dtype
-                    # if len(tar_img.shape) == 2:
-                    #     tar_img_new = np.empty((_img_rows_new, _img_cols_new), _tar_img_dtype)
-                    if len(tar_img.shape) == 2:
-                        tar_img_new = np.empty((_img_rows, _img_cols), _tar_img_dtype)
-
-                    else:
-                        # _tar_img_ch = tar_img.shape[-1]
-                        # tar_img_new = np.empty((_img_rows_new, _img_cols_new, _tar_img_ch), _tar_img_dtype)
-                        _tar_img_ch = tar_img.shape[-1]
-                        tar_img_new = np.empty((_img_rows, _img_cols, _tar_img_ch), _tar_img_dtype)
-
-                    tar_img_new[:_img_rows, :_img_cols] = tar_img
-                    tar_img = tar_img_new
-
-                if len(tar_img.shape) == 2:
-                    _tar_img = (np.expand_dims(tar_img, -1) / 255).astype('float32')
-                else:
-                    _tar_img = (tar_img / 255).astype('float32')
-
-                _tar_img = np.transpose(_tar_img, (2, 0, 1))
-                _tar_img = np.expand_dims(_tar_img, 0)
-
-                if len(result_img.shape) == 2:
-                    _result_img = (np.expand_dims(result_img, -1) / 255).astype('float32')
-                else:
-                    _result_img = (result_img / 255).astype('float32')
-
-                _result_img = np.transpose(_result_img, (2, 0, 1))
-                _result_img = np.expand_dims(_result_img, 0)
-
-                _result_img = torch.tensor(_result_img)
-                _tar_img = torch.tensor(_tar_img)
-
-                oa = metrics.overall_accuracy(_result_img, _tar_img)
-                precision = metrics.precision(_result_img, _tar_img)
-                recall = metrics.recall(_result_img, _tar_img)
-                f1 = metrics.f1_score(_result_img, _tar_img)
-                jac = metrics.jaccard(_result_img, _tar_img)
-                kappa = metrics.kappa(_result_img, _tar_img)
-
-                log_results = []
-                log_result = [img_name, checkpoint]
-                perform = [oa, precision, recall, f1, jac, kappa]
-                perform = [np.round(perform[i], 3) for i in range(len(perform))]
-                log_result.extend(perform)
-                log_results.append(log_result)
-
-                save_log(log_results)
-
-                result_mask_img = vision.pair_to_rgb(result_img, tar_img, background="white")
-                name = "{}_area_mask_{}_{}.tif".format(
-                    os.path.splitext(img_name)[0], args.target, checkpoint.strip('.pth'))
-
-                if args.border_remain:
-                    result_mask_img = result_mask_img[:_img_rows, :_img_cols]
-
-                imsave(os.path.join(Result_DIR, 'area-binary', name), result_mask_img)
-
-                if args.georef:
-                    geo_projection(img_path, os.path.join(Result_DIR, 'area-binary', name))
-
-                print("Saving {} ...".format(name))
-
-    if args.all_results:
-        get_results_all()
 
 
 if __name__ == "__main__":
@@ -417,7 +313,7 @@ if __name__ == "__main__":
                         help='add georeference or not')
     parser.add_argument('-all_results', type=lambda x: (str(x).lower() == 'true'), default=True,
                         help='get width, centerline, model info, etc.')
-    parser.add_argument('-checkpoints', nargs='+', type=str, default=[
+    parser.add_argument('-checkpoint', nargs='+', type=str, default=[
         'FPN_epoch_200_Dec24_19_15.pth'
     ],
                         help='checkpoints used for making prediction ')
@@ -433,6 +329,10 @@ if __name__ == "__main__":
                         default=False, help='get centerline or not')
     parser.add_argument('-test_all', type=lambda x: (str(x).lower() == 'true'),
                         default=True, help='test all files?')
+
+    parser.add_argument('-test_img', type=str)
+    parser.add_argument('-test_pred', type=str)
+    
     parser.add_argument('-img_names', type=str, default=[
         # '09KD993_clip.tif',
         '09KD993_small.tif',
