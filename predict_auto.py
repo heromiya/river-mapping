@@ -37,7 +37,7 @@ Utils_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'utils')
 Log_name = 'area_binary_log.csv'
 
 def rescale(img):
-    percent = 2
+    percent = 10
     pLow, pHigh = np.percentile(img[img>0], (percent, 100-percent))
     img_rescaled = exposure.rescale_intensity(img, in_range=(pLow, pHigh), out_range='uint16')
     return img_rescaled
