@@ -39,7 +39,7 @@ Log_name = 'area_binary_log.csv'
 def rescale(img):
     percent = 10
     pLow, pHigh = np.percentile(img[img>0], (percent, 100-percent))
-    img_rescaled = exposure.rescale_intensity(img, in_range=(pLow, pHigh), out_range='uint16')
+    img_rescaled = exposure.rescale_intensity(img, in_range=(pLow, pHigh))
     return img_rescaled
 
 def load_recent_checkpoint(checkpoint_dir):
@@ -187,9 +187,9 @@ def main(args):
     # read and align image
     src_img = imread(args.test_img)
 
-    src_img_green = np.expand_dims(src_img[:, :, 2], -1)
-    src_img_red = np.expand_dims(src_img[:, :, 3], -1)
-    src_img_nir = np.expand_dims(src_img[:, :, 4], -1)
+    src_img_nir = np.expand_dims(src_img[:, :, 2], -1)
+    src_img_red = np.expand_dims(src_img[:, :, 1], -1)
+    src_img_green = np.expand_dims(src_img[:, :, 0], -1)
 
     img_new = np.concatenate((src_img_nir, src_img_red, src_img_green), -1)
     src_img = rescale(img_new)
