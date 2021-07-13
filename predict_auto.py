@@ -38,7 +38,7 @@ Log_name = 'area_binary_log.csv'
 
 def rescale(img):
     percent = 10
-    pLow, pHigh = np.percentile(img[img!=65535], (percent, 100-percent))
+    pLow, pHigh = np.percentile(img[img>0], (percent, 100-percent))
     img_rescaled = exposure.rescale_intensity(img, in_range=(pLow, pHigh))
     return img_rescaled
 
