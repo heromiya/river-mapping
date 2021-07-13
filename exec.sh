@@ -38,7 +38,7 @@ function riverMapping() {
     fi
     mkdir -p $(dirname $PRED_RIVER_RAS) $(dirname $PRED_RIVER_SHP) $(dirname $NDWI_RIVER)
     make $PRED_RIVER_SHP $NDWI_RIVER_SHP
-#    rm -rf $WORKDIR
+    rm -rf $WORKDIR
 }
 export -f riverMapping
 
