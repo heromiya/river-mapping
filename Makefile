@@ -3,7 +3,7 @@ $(PRED_RIVER_RAS): $(IN_LANDSAT)
 	gdal_translate -of GTIFF -b $(RED) -b $(SWIR) -b $(NIR) -scale 3000 30000 -co COMPRESS=Deflate $< $(WORKDIR)/band_subset.tif
 	parallel gdal_fillnodata.py -b {} $(WORKDIR)/band_subset.tif $(WORKDIR)/band_subset.filled.{}.tif ::: 1 2 3
 	gdal_merge.py -separate -o $(WORKDIR)/band_subset.filled.tif -of GTIFF -co COMPRESS=Deflate $(WORKDIR)/band_subset.filled.*.tif 
-	python predict_auto.py -test_img $(WORKDIR)/band_subset.filled.tif -checkpoint $(MODEL_FILE) -test_pred $@ -batch_size $(BATCH_SIZE) -img_cols $(COLS) -img_rows $(ROWS)
+	$(PYTHON) predict_auto.py -test_img $(WORKDIR)/band_subset.filled.tif -checkpoint $(MODEL_FILE) -test_pred $@ -batch_size $(BATCH_SIZE) -img_cols $(COLS) -img_rows $(ROWS)
 
 #	gdal_fillnodata.py -b 2 $(WORKDIR)/band_subset.tif $(WORKDIR)/band_subset.filled.2.tif 
 #	gdal_fillnodata.py -b 3 $(WORKDIR)/band_subset.tif $(WORKDIR)/band_subset.filled.3.tif
@@ -23,9 +23,7 @@ $(NDWI_RIVER): $(IN_LANDSAT)
 	gdal_translate -of VRT -b $(SWIR) $<  $(WORKDIR)/swir.vrt
 	saga_cmd grid_calculus 1 -GRIDS $(WORKDIR)/green.vrt\;$(WORKDIR)/swir.vrt -RESULT $@ -FORMULA "gt((g1-g2)/(g1+g2),0)" -TYPE 1
 
-$(NDWI_RIVER_SHP): $(NDWI_RIVER)
+$(NDWI_RIVER_SHP): $(NDWI_RIVER) $(RIVER_EXTENT)
 	mkdir -p `dirname $@`
-	gdalwarp -of VRT -cutline 'Jamuna-Padoma River Extent.kmz' -co COMPRESS=Deflate $< $(WORKDIR)/ndwi_cut.vrt
+	gdalwarp -of VRT -cutline $(RIVER_EXTENT) -co COMPRESS=Deflate $< $(WORKDIR)/ndwi_cut.vrt
 	saga_cmd shapes_grid 6 -GRID $(WORKDIR)/ndwi_cut.vrt -POLYGONS $@ -CLASS_ALL 0 -CLASS_ID 1 -SPLIT 1
-
-
