@@ -62,7 +62,7 @@ for YEAR in {1973..1980}; do
     INPUTS="$INPUTS monthly_mosaic/$YEAR*.tif"
 done
 
-parallel -j1 --bar riverMapping ::: $INPUTS
+#parallel -j1 --bar riverMapping ::: $INPUTS
 #riverMapping monthly_mosaic/1988-01-03-cloudfree-mean.tif 
 #for IN in monthly_mosaic/*.tif; do riverMapping $IN; done
 
@@ -71,7 +71,14 @@ function extractSHP() {
     YEAR=$1
     COMPOSITE=$2
     NDWI_RIVER_SHP=ndwi_river.shp.d/$YEAR-01-03-cloudfree-${COMPOSITE}.tif.nwdi_river
-    SEG_RIVER_SHP=river_segment.shp.d/$YEAR-01-03-cloudfree-${COMPOSITE}.tif.FPN_epoch_200_Dec24_19_15.pth
+
+    if [ $YEAR -ge 1988 ]; then
+	export MODEL_NAME=FPN_epoch_200_Dec24_19_15.pth
+    else
+	export MODEL_NAME=FPN_epoch_400_Nov23_16_05.pth
+    fi
+
+    SEG_RIVER_SHP=river_segment.shp.d/$YEAR-01-03-cloudfree-${COMPOSITE}.tif.${MODEL_NAME}
     OUTSHP=ndwi_river.extract.shp.d/$COMPOSITE/$YEAR-01-03-cloudfree-${COMPOSITE}.tif.ndwi_river.extract
     mkdir -p $(dirname $OUTSHP)
 
@@ -93,5 +100,5 @@ EOF
 export -f extractSHP
 
 parallel -j75% extractSHP ::: {1973..1980} ::: mean median
-
+#extractSHP 1973 mean
 #done
