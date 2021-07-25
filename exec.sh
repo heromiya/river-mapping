@@ -8,8 +8,6 @@ export PYTHON=$(which python)
 export BATCH_SIZE=1
 export COLS=224
 export ROWS=224
-#export MODEL_FILE=checkpoint/FPN_epoch_400_Mar01_14_21.pth
-export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
 
 export RIVER_EXTENT=Jamuna-Padoma_River_Extent.kmz
 
@@ -19,13 +17,6 @@ function riverMapping() {
     export IN_LANDSAT=$1
     export WORKDIR=$(mktemp -d)
 
-    export PRED_RIVER_RAS=river_segment.pred.d/$(basename $IN_LANDSAT).$(basename $MODEL_FILE).tif
-    export PRED_RIVER_RAS_VRT=river_segment.pred.d/$(basename $IN_LANDSAT).$(basename $MODEL_FILE).vrt
-    export PRED_RIVER_SHP=river_segment.shp.d/$(basename $IN_LANDSAT).$(basename $MODEL_FILE)${EIGHT}.shp
-
-    export NDWI_RIVER=ndwi_river.rast.d/$(basename $IN_LANDSAT).nwdi_river.sdat
-    export NDWI_RIVER_SHP=ndwi_river.shp.d/$(basename $IN_LANDSAT).nwdi_river.shp
-
     export YEAR=$(echo $IN_LANDSAT | sed 's/.*\([0-9]\{4\}\)-.*tif/\1/g')
 
     if [ $YEAR -ge 2014 ]; then
@@ -33,19 +24,41 @@ function riverMapping() {
 	export RED=4
 	export NIR=5
 	export SWIR=6
-    else
+	export SCALE="3000 30000"
+	export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
+	export NDWI_THRESHOLD=0
+    elif [ $YEAR -ge 1988 ]; then
 	export GREEN=2
 	export RED=3
 	export NIR=4
 	export SWIR=5
+	export SCALE="3000 30000"
+	export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
+	export NDWI_THRESHOLD=0
+    else
+	export GREEN=1
+	export RED=2
+	export NIR=3
+	export SWIR=4
+	export SCALE="30 90"	
+	export MODEL_FILE=checkpoint/FPN_epoch_400_Nov23_16_05.pth
+	export NDWI_THRESHOLD=0.2
     fi
+
+    export PRED_RIVER_RAS=river_segment.pred.d/$(basename $IN_LANDSAT).$(basename $MODEL_FILE).tif
+    export PRED_RIVER_RAS_VRT=river_segment.pred.d/$(basename $IN_LANDSAT).$(basename $MODEL_FILE).vrt
+    export PRED_RIVER_SHP=river_segment.shp.d/$(basename $IN_LANDSAT).$(basename $MODEL_FILE)${EIGHT}.shp
+
+    export NDWI_RIVER=ndwi_river.rast.d/$(basename $IN_LANDSAT).nwdi_river.sdat
+    export NDWI_RIVER_SHP=ndwi_river.shp.d/$(basename $IN_LANDSAT).nwdi_river.shp
+
     mkdir -p $(dirname $PRED_RIVER_RAS) $(dirname $PRED_RIVER_SHP) $(dirname $NDWI_RIVER)
     make $PRED_RIVER_SHP $NDWI_RIVER_SHP
-    rm -rf $WORKDIR
+#    rm -rf $WORKDIR
 }
 export -f riverMapping
 
-for YEAR in {1988..2013}; do
+for YEAR in {1973..1980}; do
     INPUTS="$INPUTS monthly_mosaic/$YEAR*.tif"
 done
 
@@ -79,6 +92,6 @@ EOF
 
 export -f extractSHP
 
-parallel -j75% extractSHP ::: {1988..2013} ::: mean median
+parallel -j75% extractSHP ::: {1973..1980} ::: mean median
 
 #done

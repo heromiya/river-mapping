@@ -19,7 +19,7 @@ import sys
 sys.path.append('/usr/lib/python3/dist-packages/')
 # sys.path.append('/usr/lib/python3/dist-packages/osgeo')
 # sys.path.append('/home/guo/anaconda3/lib/python3.6/site-packages/imageio/plugins')
-import gdal
+from osgeo import gdal
 
 from skimage.morphology import medial_axis, skeletonize
 from skimage import feature
