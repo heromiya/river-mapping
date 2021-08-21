@@ -58,14 +58,12 @@ function riverMapping() {
 }
 export -f riverMapping
 
-for YEAR in {1973..1980}; do
+for YEAR in {1988..2020}; do
     INPUTS="$INPUTS monthly_mosaic/$YEAR*.tif"
 done
 
 #parallel -j1 --bar riverMapping ::: $INPUTS
-#riverMapping monthly_mosaic/1988-01-03-cloudfree-mean.tif 
 #for IN in monthly_mosaic/*.tif; do riverMapping $IN; done
-
 
 function extractSHP() {
     YEAR=$1
@@ -92,13 +90,15 @@ function extractSHP() {
 .loadshp $SEG_RIVER_SHP  layer2 UTF-8 3857 geom pid AUTO 2d
 SELECT CreateSpatialIndex('layer1', 'geom');
 SELECT CreateSpatialIndex('layer2', 'geom');
-CREATE TABLE out AS select distinct layer1.geom from layer1 left join layer2 on ST_Intersects(layer1.geom, layer2.geom) where layer2.geom is not null;
+CREATE TABLE out (fid PRIMARY KEY);
+SELECT AddGeometryColumn('out', 'geom', 3857, 'MULTIPOLYGON', 'XY');
+INSERT INTO out (geom) SELECT DISTINCT layer1.geom from layer1 left join layer2 on ST_Intersects(layer1.geom, layer2.geom) where layer2.geom is not null;
 .dumpshp out geom $OUTSHP UTF-8 POLYGON
 EOF
 }
 
 export -f extractSHP
 
-parallel -j75% extractSHP ::: {1973..1980} ::: mean median
+parallel -j75% extractSHP ::: {1988..2020} ::: mean median
 #extractSHP 1973 mean
 #done
