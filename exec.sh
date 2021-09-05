@@ -54,33 +54,35 @@ function riverMapping() {
 
     mkdir -p $(dirname $PRED_RIVER_RAS) $(dirname $PRED_RIVER_SHP) $(dirname $NDWI_RIVER)
     make $PRED_RIVER_SHP $NDWI_RIVER_SHP
-#    rm -rf $WORKDIR
+    rm -rf $WORKDIR
 }
 export -f riverMapping
 
 INPUTS=
 
-#for YEAR in {1988..2020}; do
+#for YEAR in 2021; do #{1988..2020}
 #    INPUTS="$INPUTS monthly_mosaic/$YEAR*.tif"
 #done
 
-for YEAR in {1972..2020}; do
-    for MONTH in {6..8}; do
-	export MONTH=$(printf %02d $MONTH)
-	if [ -e monthly_mosaic/${YEAR}-${MONTH}-${MONTH}-cloudfree-median.tif ]; then
-	    INPUTS="$INPUTS monthly_mosaic/${YEAR}-${MONTH}-${MONTH}-cloudfree-median.tif"
-	fi
-    done
-done
+#for YEAR in {1972..2020}; do
+#    for MONTH in {6..8}; do
+#	export MONTH=$(printf %02d $MONTH)
+#	if [ -e monthly_mosaic/${YEAR}-${MONTH}-${MONTH}-cloudfree-median.tif ]; then
+#	    INPUTS="$INPUTS monthly_mosaic/${YEAR}-${MONTH}-${MONTH}-cloudfree-median.tif"
+#	fi
+#    done
+#done
 
-parallel -j2 --bar riverMapping ::: $INPUTS
+#parallel -j2 --bar riverMapping ::: $INPUTS
+riverMapping monthly_mosaic/2021-01-03-cloudfree-median.tif
 
 function extractSHP() {
     YEAR=$1
-    MONTH=$(printf %02d $2)
+    MONTH_BEGIN=$(printf %02d $(echo $2 | cut -f 1 -d ,))
+    MONTH_END=$(printf %02d $(echo $2 | cut -f 2 -d ,))
     COMPOSITE=$3
     
-    NDWI_RIVER_SHP=ndwi_river.shp.d/$YEAR-$MONTH-$MONTH-cloudfree-${COMPOSITE}.tif.nwdi_river
+    NDWI_RIVER_SHP=ndwi_river.shp.d/$YEAR-${MONTH_BEGIN}-${MONTH_END}-cloudfree-${COMPOSITE}.tif.nwdi_river
 
     if [ $YEAR -ge 1988 ]; then
 	export MODEL_NAME=FPN_epoch_200_Dec24_19_15.pth
@@ -88,8 +90,8 @@ function extractSHP() {
 	export MODEL_NAME=FPN_epoch_400_Nov23_16_05.pth
     fi
 
-    SEG_RIVER_SHP=river_segment.shp.d/$YEAR-${MONTH}-${MONTH}-cloudfree-${COMPOSITE}.tif.${MODEL_NAME}
-    OUTSHP=ndwi_river.extract.shp.d/$COMPOSITE/$YEAR-${MONTH}-${MONTH}-cloudfree-${COMPOSITE}.tif.ndwi_river.extract
+    SEG_RIVER_SHP=river_segment.shp.d/$YEAR-${MONTH_BEGIN}-${MONTH_END}-cloudfree-${COMPOSITE}.tif.${MODEL_NAME}
+    OUTSHP=ndwi_river.extract.shp.d/$COMPOSITE/$YEAR-${MONTH_BEGIN}-${MONTH_END}-cloudfree-${COMPOSITE}.tif.ndwi_river.extract
     mkdir -p $(dirname $OUTSHP)
 
     #ogr2ogr -f SQLite -append $SQLITE $NDWI_RIVER_SHP -nln layer1 
@@ -111,4 +113,5 @@ EOF
 
 export -f extractSHP
 
-parallel extractSHP ::: {1988..2020} ::: 6 7 8 ::: median
+#parallel extractSHP ::: {1988..2020} ::: 6 7 8 ::: median
+extractSHP 2021 1,3 median
