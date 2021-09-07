@@ -64,17 +64,19 @@ INPUTS=
 #    INPUTS="$INPUTS monthly_mosaic/$YEAR*.tif"
 #done
 
-#for YEAR in {1972..2020}; do
-#    for MONTH in {6..8}; do
-#	export MONTH=$(printf %02d $MONTH)
-#	if [ -e monthly_mosaic/${YEAR}-${MONTH}-${MONTH}-cloudfree-median.tif ]; then
-#	    INPUTS="$INPUTS monthly_mosaic/${YEAR}-${MONTH}-${MONTH}-cloudfree-median.tif"
-#	fi
-#    done
-#done
+for YEAR in {1972..2015}; do
+    for MONTH in 4,6 7,9 10,12; do
+	MONTH_BEGIN=$(printf %02d $(echo $MONTH | cut -f 1 -d ,))
+	MONTH_END=$(printf %02d $(echo $MONTH | cut -f 2 -d ,))
+	INPUT=monthly_mosaic/${YEAR}-${MONTH_BEGIN}-${MONTH_END}-cloudfree-median.tif
+	if [ -e $INPUT ]; then
+	    INPUTS="$INPUTS $INPUT"
+	fi
+    done
+done
 
-#parallel -j2 --bar riverMapping ::: $INPUTS
-riverMapping monthly_mosaic/2021-01-03-cloudfree-median.tif
+parallel -j2 --bar riverMapping ::: $INPUTS
+#riverMapping monthly_mosaic/2021-01-03-cloudfree-median.tif
 
 function extractSHP() {
     YEAR=$1
@@ -113,5 +115,5 @@ EOF
 
 export -f extractSHP
 
-#parallel extractSHP ::: {1988..2020} ::: 6 7 8 ::: median
-extractSHP 2021 1,3 median
+parallel extractSHP ::: {1972..2015} ::: 4,6 7,9 10,12 ::: median
+#extractSHP 2021 1,3 median
