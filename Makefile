@@ -16,14 +16,21 @@ $(PRED_RIVER_RAS_VRT): $(PRED_RIVER_RAS)
 # -b $(RED) -b $(SWIR) -b $(NIR)
 
 $(PRED_RIVER_SHP): $(PRED_RIVER_RAS)
-	saga_cmd shapes_grid 6 -GRID $< -POLYGONS $@ -CLASS_ALL 0 -CLASS_ID 255 -SPLIT 1
+	saga_cmd  --flags=s shapes_grid 6 -GRID $< -POLYGONS $@ -CLASS_ALL 0 -CLASS_ID 255 -SPLIT 1
 
 $(NDWI_RIVER): $(IN_LANDSAT)
 	gdal_translate -of VRT -b $(GREEN) $< $(WORKDIR)/green.vrt
 	gdal_translate -of VRT -b $(NIR) $<  $(WORKDIR)/nir.vrt
 	saga_cmd grid_calculus 1 -GRIDS $(WORKDIR)/green.vrt\;$(WORKDIR)/nir.vrt -RESULT $@ -FORMULA "gt((g1-g2+0.001)/(g1+g2+0.001),$(NDWI_THRESHOLD))" -TYPE 1
 
-$(NDWI_RIVER_SHP): $(NDWI_RIVER) $(RIVER_EXTENT)
+$(NDWI_RIVER_SHP): $(NDWI_RIVER) $(TARGET_EXTENT)
 	mkdir -p `dirname $@`
 	gdalwarp -of VRT -cutline $(RIVER_EXTENT) -co COMPRESS=Deflate $< $(WORKDIR)/ndwi_cut.vrt
 	saga_cmd shapes_grid 6 -GRID $(WORKDIR)/ndwi_cut.vrt -POLYGONS $@ -CLASS_ALL 0 -CLASS_ID 1 -SPLIT 1
+
+
+$(RIVER_LINE): $(RIVER_EXTENT)
+	./functions.sh cetnerline $+ $@
+
+$(RIVER_EXTENT): $(NDWI_RIVER_SHP) $(PRED_RIVER_SHP)
+	./functions.sh extractSHP $+ $@

@@ -1,5 +1,5 @@
 #! /bin/bash
-rm -rf /tmp/*
+
 export LD_LIBRARY_PATH=$HOME/miniconda3/lib/
 export PYTHON=$(which python)
 #python predict_auto.py -checkpoints FPN_epoch_400_Mar01_14_21.pth -data input -georef true
@@ -9,7 +9,9 @@ export BATCH_SIZE=1
 export COLS=224
 export ROWS=224
 
-export RIVER_EXTENT=Jamuna-Padoma_River_Extent.kmz
+export TARGET_EXTENT=Jamuna-Padoma_River_Extent.kmz
+
+source ./functions.sh
 
 #for LANDSAT in mosaic_auto/*; do
 function riverMapping() {
@@ -58,14 +60,17 @@ function riverMapping() {
 }
 export -f riverMapping
 
+
+
 INPUTS=
 
 #for YEAR in 2021; do #{1988..2020}
 #    INPUTS="$INPUTS monthly_mosaic/$YEAR*.tif"
 #done
+:<<'#EOF'
 
-for YEAR in {1972..2015}; do
-    for MONTH in 4,6 7,9 10,12; do
+for YEAR in {1972..2008}; do
+    for MONTH in 4,4 5,5 6,6 7,7 8,8 9,9 10,10 11,11 12,12 ; do
 	MONTH_BEGIN=$(printf %02d $(echo $MONTH | cut -f 1 -d ,))
 	MONTH_END=$(printf %02d $(echo $MONTH | cut -f 2 -d ,))
 	INPUT=monthly_mosaic/${YEAR}-${MONTH_BEGIN}-${MONTH_END}-cloudfree-median.tif
@@ -74,46 +79,35 @@ for YEAR in {1972..2015}; do
 	fi
     done
 done
+#EOF
 
-parallel -j2 --bar riverMapping ::: $INPUTS
+#parallel -j2 --bar riverMapping ::: $INPUTS
 #riverMapping monthly_mosaic/2021-01-03-cloudfree-median.tif
 
-function extractSHP() {
-    YEAR=$1
-    MONTH_BEGIN=$(printf %02d $(echo $2 | cut -f 1 -d ,))
-    MONTH_END=$(printf %02d $(echo $2 | cut -f 2 -d ,))
-    COMPOSITE=$3
-    
-    NDWI_RIVER_SHP=ndwi_river.shp.d/$YEAR-${MONTH_BEGIN}-${MONTH_END}-cloudfree-${COMPOSITE}.tif.nwdi_river
+#parallel extractSHP ::: {1972..2015} ::: 4,6 7,9 10,12 ::: median
+#extractSHP 2021 1,3 median
 
-    if [ $YEAR -ge 1988 ]; then
-	export MODEL_NAME=FPN_epoch_200_Dec24_19_15.pth
+
+
+function exec() {
+    export NDWI_RIVER_SHP=$1 # ndwi_river.shp.d/1993-05-05-cloudfree-median.tif.nwdi_river.shp
+
+    YEAR=$(basename $NDWI_RIVER_SHP | sed 's/\([0-9]\{4\}\).*/\1/g')
+    BASENAME=$(basename $NDWI_RIVER_SHP | sed 's/\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-cloudfree-median.tif\).*/\1/g')
+
+    if [ $YEAR -ge 2014 ]; then
+	export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
+    elif [ $YEAR -ge 1988 ]; then
+	export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
     else
-	export MODEL_NAME=FPN_epoch_400_Nov23_16_05.pth
+	export MODEL_FILE=checkpoint/FPN_epoch_400_Nov23_16_05.pth
     fi
 
-    SEG_RIVER_SHP=river_segment.shp.d/$YEAR-${MONTH_BEGIN}-${MONTH_END}-cloudfree-${COMPOSITE}.tif.${MODEL_NAME}
-    OUTSHP=ndwi_river.extract.shp.d/$COMPOSITE/$YEAR-${MONTH_BEGIN}-${MONTH_END}-cloudfree-${COMPOSITE}.tif.ndwi_river.extract
-    mkdir -p $(dirname $OUTSHP)
-
-    #ogr2ogr -f SQLite -append $SQLITE $NDWI_RIVER_SHP -nln layer1 
-    #ogr2ogr -f SQLite -append $SQLITE $SEG_RIVER_SHP -nln layer2
-
-    #ogr2ogr -sql "SELECT DISTINCT layer1.geometry,0 FROM layer1 LEFT JOIN layer2 ON ST_Intersects(layer1.geometry,layer2.geometry) WHERE layer2.geometry IS NOT NULL" test.shp $SQLITE
-
-    spatialite <<EOF
-.loadshp $NDWI_RIVER_SHP layer1 UTF-8 3857 geom pid AUTO 2d
-.loadshp $SEG_RIVER_SHP  layer2 UTF-8 3857 geom pid AUTO 2d
-SELECT CreateSpatialIndex('layer1', 'geom');
-SELECT CreateSpatialIndex('layer2', 'geom');
-CREATE TABLE out (fid PRIMARY KEY);
-SELECT AddGeometryColumn('out', 'geom', 3857, 'MULTIPOLYGON', 'XY');
-INSERT INTO out (geom) SELECT DISTINCT layer1.geom from layer1 left join layer2 on ST_Intersects(layer1.geom, layer2.geom) where layer2.geom is not null;
-.dumpshp out geom $OUTSHP UTF-8 POLYGON
-EOF
+    export PRED_RIVER_SHP=river_segment.shp.d/$BASENAME.$(basename $MODEL_FILE).shp
+    export RIVER_EXTENT=ndwi_river.extract.shp.d/median/$BASENAME.ndwi_river.extract.shp
+    export RIVER_LINE=ndwi_river.extract.line.shp.d/$(basename $RIVER_EXTENT).line.shp
+    make $RIVER_LINE
 }
+export -f exec
 
-export -f extractSHP
-
-parallel extractSHP ::: {1972..2015} ::: 4,6 7,9 10,12 ::: median
-#extractSHP 2021 1,3 median
+parallel exec ::: $(find ndwi_river.shp.d/ -type f -regex ".*\.shp$")
