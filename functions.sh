@@ -1,13 +1,10 @@
 #! /bin/bash
 
 function extractSHP() {
-    #YEAR=$1
-    #MONTH_BEGIN=$(printf %02d $(echo $2 | cut -f 1 -d ,))
-    #MONTH_END=$(printf %02d $(echo $2 | cut -f 2 -d ,))
 
     NDWI_RIVER_SHP=$(echo $1 | sed 's/\.shp$//') #ndwi_river.shp.d/$YEAR-${MONTH_BEGIN}-${MONTH_END}-cloudfree-${COMPOSITE}.tif.nwdi_rive
     SEG_RIVER_SHP=$(echo $2  | sed 's/\.shp$//') #river_segment.shp.d/$YEAR-${MONTH_BEGIN}-${MONTH_END}-cloudfree-${COMPOSITE}.tif.${MODEL_NAME}
-    OUTSHP=$3 #ndwi_river.extract.shp.d/$COMPOSITE/$YEAR-${MONTH_BEGIN}-${MONTH_END}-cloudfree-${COMPOSITE}.tif.ndwi_river.extract
+    OUTSHP=$(echo $3 | sed 's/\.shp$//') #ndwi_river.extract.shp.d/$COMPOSITE/$YEAR-${MONTH_BEGIN}-${MONTH_END}-cloudfree-${COMPOSITE}.tif.ndwi_river.extract
 
     #COMPOSITE=$3
     
@@ -49,8 +46,8 @@ function centerline(){
 	tres=60
     fi
 
-    gdal_rasterize -burn 1 -tr $tres $tres $IN $WORKDIR/rast.tif
-    gdal_sieve.py -st 1000 $WORKDIR/rast.tif
+    gdal_rasterize -q -burn 1 -tr $tres $tres $IN $WORKDIR/rast.tif
+    gdal_sieve.py -q -st 1000 $WORKDIR/rast.tif
 
     python skeleton.py  $WORKDIR/rast.tif $WORKDIR/skeleton.tif
     grass -c $WORKDIR/temploc --exec $PWD/raster2polyline.sh $WORKDIR/skeleton.tif  $WORKDIR/vect.gpkg
@@ -60,4 +57,4 @@ function centerline(){
 }
 export -f centerline
 
-$($1 $2 $3 $4 $5 $6 $7 $8 $9)
+$1 $2 $3 $4 $5 $6 $7 $8 $9
