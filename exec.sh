@@ -11,12 +11,9 @@ export TARGET_EXTENT=Jamuna-Padoma_River_Extent.kmz
 source ./functions.sh
 
 function exec() {
-
     export IN_LANDSAT=$1
-    export WORKDIR=$(mktemp -d)
-
     export YEAR=$(echo $IN_LANDSAT | sed 's/.*\([0-9]\{4\}\)-.*tif/\1/g')
-
+	export WORKDIR=$(mktemp -d)
     if [ $YEAR -ge 2014 ]; then
 	export GREEN=3
 	export RED=4
@@ -56,7 +53,8 @@ function exec() {
     export RIVER_EXTENT=ndwi_river.extract.shp.d/median/$BASENAME.ndwi_river.extract.shp
     export RIVER_LINE=ndwi_river.extract.line.shp.d/$(basename $RIVER_EXTENT).line.shp
     make -r $RIVER_LINE
+    rm -rf $WORKDIR
 }
 export -f exec
-#exec monthly_mosaic/2011-01-03-cloudfree-median.tif
+#exec monthly_mosaic/2015-04-06-cloudfree-median.tif
 parallel exec ::: $(find monthly_mosaic/ -type f -regex ".*median.*tif$")
