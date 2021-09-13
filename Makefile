@@ -27,5 +27,11 @@ $(RIVER_LINE): $(RIVER_EXTENT)
 $(RIVER_EXTENT): $(NDWI_RIVER_SHP) $(PRED_RIVER_SHP)
 	./functions.sh extractSHP $+ $@
 
-$(MAP_OUTPUT): $(RIVER_EXTENT) $(RIVER_LINE)
-	./functions.sh map_output_river $+ $@
+$(MAP_OUTPUT_RIVER): $(RIVER_EXTENT) $(RIVER_LINE) mapfile.river.template.map
+	./functions.sh map_output_river $(word 1,$+) $(word 2,$+) $@
+
+$(MAP_OUTPUT_VEG): $(VEG_RAST) mapfile.vegetation.template.map 
+	./functions.sh map_output_vegetation $< $@
+
+$(VEG_VECT): $(VEG_RAST)
+	grass -c $(WORKDIR)/temploc --exec $$PWD/grass.polygonize.sh $< $@

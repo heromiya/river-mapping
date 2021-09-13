@@ -58,3 +58,4 @@ function exec() {
 export -f exec
 #exec monthly_mosaic/2015-04-06-cloudfree-median.tif
 parallel exec ::: $(find monthly_mosaic/ -type f -regex ".*median.*tif$")
+./copyProductsForDelivery.sh

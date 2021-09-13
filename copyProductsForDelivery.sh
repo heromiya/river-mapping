@@ -1,7 +1,7 @@
 #! /bin/bash
 HOST=192.168.0.3
 
-owncloudcmd -u heromiya -p K@shiwa454 vegetation "http://$HOST:8081/owncloud/remote.php/webdav/BGD River Mapping/Clutering for Vegetation Mapping"
+owncloudcmd -u heromiya -p K@shiwa454 vegetation "http://$HOST:8081/owncloud/remote.php/webdav/BGD River Mapping/Clustering for Vegetation Mapping"
 owncloudcmd -u heromiya -p K@shiwa454 ndwi_river.extract.shp.d/median "http://$HOST:8081/owncloud/remote.php/webdav/BGD River Mapping/210910 River mapping results for delivery/Extent"
 owncloudcmd -u heromiya -p K@shiwa454 ndwi_river.extract.line.shp.d   "http://$HOST:8081/owncloud/remote.php/webdav/BGD River Mapping/210910 River mapping results for delivery/Line"
 owncloudcmd -u heromiya -p K@shiwa454 map_output.d   "http://$HOST:8081/owncloud/remote.php/webdav/BGD River Mapping/210910 River mapping results for delivery/Map"

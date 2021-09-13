@@ -1,0 +1,48 @@
+MAP
+	NAME "River extents and lines"
+ 	EXTENT 9955387 2517811 10156396 3048681
+	#EXTENT 89 22 91 27
+      	UNITS METERS
+        #SHAPEPATH "./"
+	SIZE 1600 3200
+	IMAGECOLOR 255 255 255
+	
+	IMAGETYPE PNG
+
+	PROJECTION
+ 	     	"proj=merc" "a=6378137" "b=6378137" "lat_ts=0.0" "lon_0=0.0" "x_0=0.0" "y_0=0" "k=1.0" "units=m" "nadgrids=@null"
+		#"proj=latlon" "datum=WGS84"
+        END
+
+	LAYER
+		NAME "Extent"
+ 		STATUS ON
+	      	TYPE POLYGON
+	        DATA _EXTENT_SHP_
+		CLASS
+			STYLE
+				#COLOR 246 241 223
+				OUTLINECOLOR 0 0 255
+			END
+		END
+		PROJECTION
+		"proj=merc" "a=6378137" "b=6378137" "lat_ts=0.0" "lon_0=0.0" "x_0=0.0" "y_0=0" "k=1.0" "units=m" "nadgrids=@null"
+		END
+
+	END
+	LAYER
+		NAME "Line"
+ 		STATUS ON
+	      	TYPE LINE
+	        DATA _LINE_SHP_
+		CLASS
+			STYLE
+				WIDTH 1
+				OUTLINECOLOR 255 0 0
+			END
+		END
+		PROJECTION
+		"proj=merc" "a=6378137" "b=6378137" "lat_ts=0.0" "lon_0=0.0" "x_0=0.0" "y_0=0" "k=1.0" "units=m" "nadgrids=@null"
+		END
+	END
+END

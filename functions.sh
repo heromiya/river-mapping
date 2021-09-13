@@ -61,21 +61,31 @@ function map_output_river(){
     WORKDIR=$(mktemp -d)
     
     EXTENT_SHP=$(echo $1 | sed 's/\//\\\//g')
-    # \\/home\\/heromiya\\/river-mapping\\/ndwi_river.extract.shp.d\\/median\\/${PERIOD}-cloudfree-median.tif.ndwi_river.extract.shp
     LINE_SHP=$(echo $2 | sed 's/\//\\\//g')
-    #\\/home\\/heromiya\\/river-mapping\\/ndwi_river.extract.line.shp.d\\/${PERIOD}-cloudfree-median.tif.ndwi_river.extract.shp.line.shp
-    #EXTENT_SHP=\\/home\\/heromiya\\/river-mapping\\/ndwi_river.extract.shp.d\\/median\\/${PERIOD}-cloudfree-median.tif.ndwi_river.extract.shp
-    #LINE_SHP=\\/home\\/heromiya\\/river-mapping\\/ndwi_river.extract.line.shp.d\\/${PERIOD}-cloudfree-median.tif.ndwi_river.extract.shp.line.shp
 
     PERIOD=$(basename $LINE_SHP | sed 's/\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)-.*/\1/g') #2021-01-03
 
     sed "s/_EXTENT_SHP_/$EXTENT_SHP/g; s/_LINE_SHP_/$LINE_SHP/g" mapfile.river.template.map > $WORKDIR/mapfile.map
 
     shp2img -m $WORKDIR/mapfile.map -o $WORKDIR/map_output.png
-    convert $WORKDIR/map_output.png -pointsize 24 -gravity northwest -annotate +10+10 "${PERIOD}" $3 # $MAP_OUTPUT/$PERIOD-map_output.png
+    convert $WORKDIR/map_output.png -pointsize 96 -gravity northwest -annotate +10+10 "${PERIOD}" $3 # $MAP_OUTPUT/$PERIOD-map_output.png
     rm -rf $WORKDIR
 }
 
+
+function map_output_vegetation(){
+    WORKDIR=$(mktemp -d)
+    
+    VEG_RAST=$(echo $1 | sed 's/\//\\\//g')
+
+    PERIOD=$(basename $VEG_RAST | sed 's/\([0-9]\{4\}\).*/\1/g') #2021-01-03
+
+    sed "s/_VEG_RAST_/$VEG_RAST/g" mapfile.vegetation.template.map > $WORKDIR/mapfile.map
+
+    shp2img -m $WORKDIR/mapfile.map -o $WORKDIR/map_output.png
+    convert $WORKDIR/map_output.png -pointsize 96 -gravity northwest -annotate +10+10 "${PERIOD}" $2 # $MAP_OUTPUT/$PERIOD-map_output.png
+    rm -rf $WORKDIR
+}
 
 
 $1 $2 $3 $4 $5 $6 $7 $8 $9

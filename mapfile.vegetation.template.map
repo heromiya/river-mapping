@@ -1,0 +1,71 @@
+MAP
+	NAME "River vegetation"
+ 	EXTENT 9955387 2517811 10156396 3048681
+	#EXTENT 89 22 91 27
+      	UNITS METERS
+        SHAPEPATH "./"
+	SIZE 1600 3200
+	IMAGECOLOR 255 255 255
+	
+	IMAGETYPE PNG
+
+	PROJECTION
+ 	     	"proj=merc" "a=6378137" "b=6378137" "lat_ts=0.0" "lon_0=0.0" "x_0=0.0" "y_0=0" "k=1.0" "units=m" "nadgrids=@null"
+		#"proj=latlon" "datum=WGS84" 
+        END
+
+	LAYER
+		NAME "Extent"
+ 		STATUS ON
+	      	TYPE RASTER
+	        DATA _VEG_RAST_
+		CLASSITEM "[pixel]"
+		CLASS
+			EXPRESSION "0"
+			STYLE
+				COLOR 31 120 180
+			END
+		END
+		CLASS
+			EXPRESSION "1"
+			STYLE
+				COLOR 166 206 227
+			END
+		END
+		CLASS
+			EXPRESSION "2"
+			STYLE
+				COLOR 255 127 0
+			END
+		END
+		CLASS
+			EXPRESSION "3"
+			STYLE
+				COLOR 253 191 111
+			END
+		END
+		CLASS
+			EXPRESSION "4"
+			STYLE
+				COLOR 178 223 138
+			END
+		END
+		CLASS
+			EXPRESSION "5"
+			STYLE
+				COLOR 51 160 44
+			END
+		END
+		CLASS
+			EXPRESSION "6"
+			STYLE
+				COLOR 16 51 14
+			END
+		END
+
+		PROJECTION
+		"proj=merc" "a=6378137" "b=6378137" "lat_ts=0.0" "lon_0=0.0" "x_0=0.0" "y_0=0" "k=1.0" "units=m" "nadgrids=@null"
+		END
+
+	END
+END
