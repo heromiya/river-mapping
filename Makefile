@@ -21,8 +21,17 @@ $(NDWI_RIVER_SHP): $(NDWI_RIVER) $(TARGET_EXTENT)
 	gdalwarp -of VRT -cutline $(TARGET_EXTENT) -co COMPRESS=Deflate $< $(WORKDIR)/ndwi_cut.vrt
 	saga_cmd --flags=s shapes_grid 6 -GRID $(WORKDIR)/ndwi_cut.vrt -POLYGONS $@ -CLASS_ALL 0 -CLASS_ID 1 -SPLIT 1 # --flags=s
 
-$(RIVER_LINE): $(RIVER_EXTENT)
-	if [ `ogrinfo $< -al -summary | grep "Feature Count" | cut -f 3 -d " "` -gt 0 ]; then ./functions.sh centerline $+ $@; fi
+$(RIVER_LINE): #$(RIVER_EXTENT)
+	mkdir -p `dirname $@`
+	if [ `ogrinfo $(RIVER_EXTENT) -al -summary | grep "Feature Count" | cut -f 3 -d " "` -gt 0 ]; then ./functions.sh centerline $(RIVER_EXTENT) $@; fi
+
+$(RIVER_LINE_DIST): #$(RIVER_EXTENT)
+	mkdir -p `dirname $@`
+	if [ `ogrinfo $(RIVER_EXTENT) -al -summary | grep "Feature Count" | cut -f 3 -d " "` -gt 0 ]; then ./functions.sh riverwidth $(RIVER_EXTENT) $@; fi
+
+$(RIVER_MAJOR_STREAM): $(RIVER_LINE_DIST)
+	mkdir -p `dirname $@`
+	./functions.sh identify_major_stream $< $@
 
 $(RIVER_EXTENT): $(NDWI_RIVER_SHP) $(PRED_RIVER_SHP)
 	./functions.sh extractSHP $+ $@

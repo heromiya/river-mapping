@@ -31,11 +31,8 @@ EOF
 export -f extractSHP
 
 function centerline(){
-
     IN=$1
-    OUT=$2
-
-
+    OUT_LINE=$2
     WORKDIR=$(mktemp -d)
 
     YEAR=$(basename $IN | sed 's/^\([0-9]\{4\}\).*/\1/g')
@@ -49,13 +46,36 @@ function centerline(){
     gdal_rasterize -q -burn 1 -tr $tres $tres $IN $WORKDIR/rast.tif
     gdal_sieve.py -q -st 1000 $WORKDIR/rast.tif
 
-    python skeleton.py  $WORKDIR/rast.tif $WORKDIR/skeleton.tif
+    python skeleton.py $WORKDIR/rast.tif skel $WORKDIR/skeleton.tif
+    export PROJ_LIB=/usr/share/proj/
     grass -c $WORKDIR/temploc --exec $PWD/raster2polyline.sh $WORKDIR/skeleton.tif  $WORKDIR/vect.gpkg
     ogr2ogr -a_srs EPSG:3857 -f "ESRI Shapefile" $OUT $WORKDIR/vect.gpkg
     rm -rf $WORKDIR
 
 }
 export -f centerline
+
+function riverwidth(){
+    IN=$1
+    OUT_DIST=$2
+    WORKDIR=$(mktemp -d)
+
+    YEAR=$(basename $IN | sed 's/^\([0-9]\{4\}\).*/\1/g')
+
+    if [ $YEAR -ge 1984 ]; then
+	tres=30
+    else
+	tres=60
+    fi
+
+    gdal_rasterize -q -burn 1 -tr $tres $tres $IN $WORKDIR/rast.tif
+    gdal_sieve.py -q -st 1000 $WORKDIR/rast.tif
+
+    python skeleton.py $WORKDIR/rast.tif dist $OUT_DIST
+    rm -rf $WORKDIR
+
+}
+export -f riverwidth
 
 function map_output_river(){
     WORKDIR=$(mktemp -d)
@@ -86,6 +106,28 @@ function map_output_vegetation(){
     convert $WORKDIR/map_output.png -pointsize 96 -gravity northwest -annotate +10+10 "${PERIOD}" $2 # $MAP_OUTPUT/$PERIOD-map_output.png
     rm -rf $WORKDIR
 }
+
+function identify_major_stream(){
+    WORKDIR=$(mktemp -d)
+    GRASS_SCRIPT=$WORKDIR/grass.sh
+    
+    IN_DIST=$1
+    OUT_LINE=$2
+    GRASS_OPT="--overwrite"
+    cat > $GRASS_SCRIPT <<EOF
+    r.external input=$IN_DIST output=dist --overwrite
+    g.region raster=dist $GRASS_OPT
+    r.mapcalc expression="cost_sur = 1000000 / (dist + 1)^5" --overwrite
+    r.cost -kb input=cost_sur output=cost start_coordinates=10082459.73,3025052.87 outdir=dir --overwrite
+    r.path input=dir format=auto vector_path=path start_coordinates=10113912.32,2582622.93 --overwrite
+    v.out.ogr input=path type=line output=$OUT_LINE format=ESRI_Shapefile $GRASS_OPT
+EOF
+    chmod u+x $GRASS_SCRIPT
+    export PROJ_LIB=/usr/share/proj/
+    grass78 -c EPSG:3857 --tmp-location --exec sh $GRASS_SCRIPT
+        
+}
+export -f identify_major_stream
 
 
 $1 $2 $3 $4 $5 $6 $7 $8 $9

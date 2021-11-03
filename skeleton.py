@@ -5,14 +5,18 @@ from skimage.morphology import medial_axis, skeletonize
 import sys
 
 infile = sys.argv[1]
-outfile = sys.argv[2]
+mode = sys.argv[2]
+outfile = sys.argv[3]
 
 img = rasterio.open(infile)
 array = img.read(1)
-skeleton = skeletonize(array, method='lee')
-#skeleton = medial_axis(array)
+if mode == 'skel':
+    out = skeletonize(array, method='lee')
+if mode == 'dist':
+    skel, dist = medial_axis(array, return_distance=True)
+    out = dist * skel
 
-new_dataset = rasterio.open(
+outds = rasterio.open(
     outfile,
     'w',
     driver='GTiff',
@@ -25,5 +29,5 @@ new_dataset = rasterio.open(
     transform=img.transform,
 )
 
-new_dataset.write(skeleton, 1)
-new_dataset.close()
+outds.write(out, 1)
+outds.close()

@@ -13,7 +13,16 @@ source ./functions.sh
 function exec() {
     export IN_LANDSAT=$1
     export YEAR=$(echo $IN_LANDSAT | sed 's/.*\([0-9]\{4\}\)-.*tif/\1/g')
-	export WORKDIR=$(mktemp -d)
+
+    M1=$(echo $PERIOD | sed 's/.*[0-9]\{4\}-\([0-9]\{2\}\)-\([0-9]\{2\}\).*/\1/g')
+    M2=$(echo $PERIOD | sed 's/.*[0-9]\{4\}-\([0-9]\{2\}\)-\([0-9]\{2\}\).*/\2/g')
+    if [ M1 = M2 ]; then
+	MQ=monthly
+    else
+	MQ=quarterly
+    fi
+    
+    export WORKDIR=$(mktemp -d)
     if [ $YEAR -ge 2014 ]; then
 	export GREEN=3
 	export RED=4
@@ -50,12 +59,14 @@ function exec() {
     BASENAME=$(basename $NDWI_RIVER_SHP | sed 's/\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-cloudfree-median.tif\).*/\1/g')
 
     export PRED_RIVER_SHP=river_segment.shp.d/$BASENAME.$(basename $MODEL_FILE).shp
-    export RIVER_EXTENT=ndwi_river.extract.shp.d/median/$BASENAME.ndwi_river.extract.shp
-    export RIVER_LINE=ndwi_river.extract.line.shp.d/$(basename $RIVER_EXTENT).line.shp
-    make -r $RIVER_LINE
+    export RIVER_EXTENT=ndwi_river.extract.shp.d/median/$MQ/$YEAR/$BASENAME.ndwi_river.extract.shp
+    export RIVER_LINE=ndwi_river.extract.line.shp.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.shp
+    export RIVER_LINE_DIST=ndwi_river.extract.line.dist.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.dist.tif
+    export RIVER_MAJOR_STREAM=ndwi_river.major_stream.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).major_stream.shp
+    make -r $RIVER_MAJOR_STREAM
     rm -rf $WORKDIR
 }
 export -f exec
-#exec monthly_mosaic/2015-04-06-cloudfree-median.tif
+#exec monthly_mosaic/2019-01-03-cloudfree-median.tif
 parallel exec ::: $(find monthly_mosaic/ -type f -regex ".*median.*tif$")
-./copyProductsForDelivery.sh
+#./copyProductsForDelivery.sh
