@@ -23,7 +23,7 @@ function extractSHP() {
 SELECT CreateSpatialIndex('layer1', 'geom');
 SELECT CreateSpatialIndex('layer2', 'geom');
 CREATE TABLE out (fid PRIMARY KEY);
-SELECT AddGeometryColumn('out', 'geom', 3857, 'MULTIPOLYGON', 'XY');
+SELECT AddGeometryColumn('out', 'geom', 3857, 'POLYGON', 'XY');
 INSERT INTO out (geom) SELECT DISTINCT layer1.geom from layer1 left join layer2 on ST_Intersects(layer1.geom, layer2.geom) where layer2.geom is not null;
 .dumpshp out geom $OUTSHP UTF-8 POLYGON
 EOF
@@ -125,9 +125,60 @@ EOF
     chmod u+x $GRASS_SCRIPT
     export PROJ_LIB=/usr/share/proj/
     grass78 -c EPSG:3857 --tmp-location --exec sh $GRASS_SCRIPT
+    rm -rf $WORKDIR
         
 }
 export -f identify_major_stream
+
+
+function ndwi_river() {
+    WORKDIR=$(mktemp -d)
+    GRASS_SCRIPT=$WORKDIR/grass.sh
+    
+    IN_GREEN=$1
+    IN_NIR=$2
+    OUT=$3
+    GRASS_OPT="--overwrite"
+    cat > $GRASS_SCRIPT <<EOF
+    r.external input=$IN_GREEN output=green --overwrite
+    r.external input=$IN_NIR output=nir --overwrite
+    g.region raster=green $GRASS_OPT
+    r.mapcalc expression="river = (green-nir+0.001)/(green+nir+0.001) > ${NDWI_THRESHOLD}" --overwrite
+    r.out.gdal input=river output=$OUT type=Byte createopt=COMPRESS=Deflate $GRASS_OPT
+
+EOF
+    chmod u+x $GRASS_SCRIPT
+    export PROJ_LIB=/usr/share/proj/
+    grass78 -c EPSG:3857 --tmp-location --exec sh $GRASS_SCRIPT
+    rm -rf $WORKDIR
+
+}
+
+function rast2poly () {
+    WORKDIR=$(mktemp -d)
+    GRASS_SCRIPT=$WORKDIR/grass.sh
+    
+    IN=$1
+    VALUE=$2
+    OUT=$3
+    GRASS_OPT="--overwrite"
+    cat > $GRASS_SCRIPT <<EOF
+    r.external input=$IN output=in --overwrite
+    g.region raster=in $GRASS_OPT
+    #r.null map=in setnull=0 $GRASS_OPT
+    r.mask raster=in maskcats=$VALUE
+    r.to.vect input=in output=out type=area $GRASS_OPT
+    v.out.ogr input=out output=$OUT format=ESRI_Shapefile $GRASS_OPT
+
+EOF
+    chmod u+x $GRASS_SCRIPT
+    export PROJ_LIB=/usr/share/proj/
+    grass78 -c EPSG:3857 --tmp-location --exec sh $GRASS_SCRIPT
+    rm -rf $WORKDIR
+    
+}
+
+
 
 
 $1 $2 $3 $4 $5 $6 $7 $8 $9

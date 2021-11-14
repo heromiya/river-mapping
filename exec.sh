@@ -6,7 +6,8 @@ export BATCH_SIZE=1
 export COLS=224
 export ROWS=224
 
-export TARGET_EXTENT=Jamuna-Padoma_River_Extent.kmz
+#export TARGET_EXTENT=Jamuna-Padoma_River_Extent.kmz
+export TARGET_EXTENT=BGD-broad_extent.kmz
 
 source ./functions.sh
 
@@ -53,7 +54,7 @@ function exec() {
     export PRED_RIVER_RAS_VRT=river_segment.pred.d/$(basename $IN_LANDSAT).$(basename $MODEL_FILE).vrt
     export PRED_RIVER_SHP=river_segment.shp.d/$(basename $IN_LANDSAT).$(basename $MODEL_FILE)${EIGHT}.shp
 
-    export NDWI_RIVER=ndwi_river.rast.d/$(basename $IN_LANDSAT).nwdi_river.sdat
+    export NDWI_RIVER=ndwi_river.rast.d/$(basename $IN_LANDSAT).nwdi_river.tif
     export NDWI_RIVER_SHP=ndwi_river.shp.d/$(basename $IN_LANDSAT).nwdi_river.shp
 
     BASENAME=$(basename $NDWI_RIVER_SHP | sed 's/\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-cloudfree-median.tif\).*/\1/g')
@@ -63,10 +64,11 @@ function exec() {
     export RIVER_LINE=ndwi_river.extract.line.shp.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.shp
     export RIVER_LINE_DIST=ndwi_river.extract.line.dist.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.dist.tif
     export RIVER_MAJOR_STREAM=ndwi_river.major_stream.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).major_stream.shp
-    make -r $RIVER_MAJOR_STREAM
-    rm -rf $WORKDIR
+    make -r $RIVER_EXTENT #$RIVER_MAJOR_STREAM
+#    rm -rf $WORKDIR
 }
 export -f exec
-#exec monthly_mosaic/2019-01-03-cloudfree-median.tif
-parallel exec ::: $(find monthly_mosaic/ -type f -regex ".*median.*tif$")
+#exec monthly_mosaic/1973-01-03-cloudfree-median.tif
+#parallel exec ::: $(find monthly_mosaic/ -type f -regex ".*median.*tif$")
 #./copyProductsForDelivery.sh
+parallel --bar exec ::: $(find monthly_mosaic/ -type f -regex ".*197[3-9]-01-03.*median.*tif$") monthly_mosaic/1980-01-03-cloudfree-median.tif
