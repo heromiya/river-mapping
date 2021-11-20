@@ -17,7 +17,7 @@ function extractSHP() {
 
     mkdir -p $(dirname $OUTSHP)
 
-    spatialite <<EOF
+    spatialite $WORKDIR/spatialite.sqlite <<EOF
 .loadshp $NDWI_RIVER_SHP layer1 UTF-8 3857 geom pid AUTO 2d
 .loadshp $SEG_RIVER_SHP  layer2 UTF-8 3857 geom pid AUTO 2d
 SELECT CreateSpatialIndex('layer1', 'geom');
