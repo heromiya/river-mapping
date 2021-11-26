@@ -1,16 +1,13 @@
 #! /bin/bash
 
+source ./vars.sh
+source ./functions.sh
+
 export PYTHON=$(which python)
 
 export BATCH_SIZE=1
 export COLS=224
 export ROWS=224
-
-#export TARGET_EXTENT=Jamuna-Padoma_River_Extent.kmz
-export TARGET_EXTENT=BGD-broad_extent.kmz
-export OUTPUT_BASEDIR=BGD-broad_extent
-
-source ./functions.sh
 
 function exec() {
     export IN_LANDSAT=$1
@@ -72,4 +69,4 @@ export -f exec
 #exec monthly_mosaic-211117/1973-01-03-cloudfree-median.tif
 #parallel exec ::: $(find monthly_mosaic/ -type f -regex ".*median.*tif$")
 #./copyProductsForDelivery.sh
-parallel --bar -j50% exec ::: $(find monthly_mosaic-211117/ -type f -regex ".*median.*tif$")
+parallel --results parallel.log.d --bar -j$N_JOBS exec ::: $INPUTS
