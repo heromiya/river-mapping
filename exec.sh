@@ -62,7 +62,8 @@ function exec() {
     export RIVER_LINE=$OUTPUT_BASEDIR/ndwi_river.extract.line.shp.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.shp
     export RIVER_LINE_DIST=$OUTPUT_BASEDIR/ndwi_river.extract.line.dist.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.dist.tif
     export RIVER_MAJOR_STREAM=$OUTPUT_BASEDIR/ndwi_river.major_stream.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).major_stream.shp
-    make -r $RIVER_EXTENT #$RIVER_MAJOR_STREAM
+    
+    make -r $NDWI_RIVER_SHP $RIVER_LINE #$NDWI_RIVER_SHP #$RIVER_EXTENT #$RIVER_MAJOR_STREAM
     rm -rf $WORKDIR
 }
 export -f exec

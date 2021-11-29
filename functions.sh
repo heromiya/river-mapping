@@ -34,23 +34,42 @@ function centerline(){
     IN=$1
     OUT_LINE=$2
     WORKDIR=$(mktemp -d)
+    GRASS_SCRIPT=$WORKDIR/grass.sh
 
     YEAR=$(basename $IN | sed 's/^\([0-9]\{4\}\).*/\1/g')
 
-    if [ $YEAR -ge 1984 ]; then
-	tres=30
+    if [ $NDWI_ONLY = 'TRUE' ]; then
+	#cp $IN  $WORKDIR/rast.tif
+	gdalwarp -multi -cutline $TARGET_EXTENT -dstnodata 0 $IN $WORKDIR/cut.tif
+	gdal_sieve.py -q -8 -st $CENTERLINE_THRESHOLD $WORKDIR/cut.tif $WORKDIR/rast.tif
+	
     else
-	tres=60
-    fi
+	if [ $YEAR -ge 1984 ]; then
+	    tres=30
+	else
+	    tres=60
+	fi
 
-    gdal_rasterize -q -burn 1 -tr $tres $tres $IN $WORKDIR/rast.tif
-    gdal_sieve.py -q -st 1000 $WORKDIR/rast.tif
+	gdal_rasterize -q -burn 1 -tr $tres $tres $IN $WORKDIR/rast.tif
+	gdal_sieve.py -q -st $(CENTERLINE_THRESHOLD) $WORKDIR/rast.tif
+    fi
+    
+    cat > $GRASS_SCRIPT <<EOF
+    r.external input=$WORKDIR/rast.tif output=rast --overwrite
+    g.region raster=rast $GRASS_OPT
+    #r.buffer -z input=rast output=buf distances=100 --overwrite
+    #r.mapcalc "buf_reclass = if(buf > 0, 1, null())"
+    r.out.gdal input=buf output=$WORKDIR/buf.tif type=Byte createopt=COMPRESS=Deflate $GRASS_OPT
+EOF
+    chmod u+x $GRASS_SCRIPT
+    export PROJ_LIB=/usr/share/proj/
+    #grass78 -c EPSG:3857 --tmp-location --exec sh $GRASS_SCRIPT
 
     python skeleton.py $WORKDIR/rast.tif skel $WORKDIR/skeleton.tif
     export PROJ_LIB=/usr/share/proj/
     grass -c $WORKDIR/temploc --exec $PWD/raster2polyline.sh $WORKDIR/skeleton.tif  $WORKDIR/vect.gpkg
-    ogr2ogr -a_srs EPSG:3857 -f "ESRI Shapefile" $OUT $WORKDIR/vect.gpkg
-    rm -rf $WORKDIR
+    /usr/bin/ogr2ogr -a_srs EPSG:3857 -f "ESRI Shapefile" $OUT_LINE $WORKDIR/vect.gpkg
+    #rm -rf $WORKDIR
 
 }
 export -f centerline
@@ -137,15 +156,15 @@ function ndwi_river() {
     
     IN_GREEN=$1
     IN_NIR=$2
-    OUT=$3
+    IN_SWIR=$3
+    OUT=$4
     GRASS_OPT="--overwrite"
     cat > $GRASS_SCRIPT <<EOF
     r.external input=$IN_GREEN output=green --overwrite
     r.external input=$IN_NIR output=nir --overwrite
     g.region raster=green $GRASS_OPT
-    r.mapcalc expression="river = (green-nir+0.001)/(green+nir+0.001) > ${NDWI_THRESHOLD}" --overwrite
+    r.mapcalc expression="river = (green-nir+0.001)/(green+nir+0.001) > -0.05 " --overwrite
     r.out.gdal input=river output=$OUT type=Byte createopt=COMPRESS=Deflate $GRASS_OPT
-
 EOF
     chmod u+x $GRASS_SCRIPT
     export PROJ_LIB=/usr/share/proj/
@@ -153,6 +172,8 @@ EOF
     rm -rf $WORKDIR
 
 }
+#&& (nir-swir+0.001)/(nir+swir+0.001) > -0.01 
+#    r.external input=$IN_SWIR output=swir --overwrite
 
 function rast2poly () {
     WORKDIR=$(mktemp -d)

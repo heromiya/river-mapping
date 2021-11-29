@@ -20,7 +20,8 @@ $(NDWI_RIVER): $(IN_LANDSAT)
 	mkdir -p `dirname $@`
 	gdal_translate -of VRT -b $(GREEN) $< $(WORKDIR)/green.vrt
 	gdal_translate -of VRT -b $(NIR) $<  $(WORKDIR)/nir.vrt
-	./functions.sh ndwi_river  $(WORKDIR)/green.vrt  $(WORKDIR)/nir.vrt $@
+	gdal_translate -of VRT -b $(SWIR) $<  $(WORKDIR)/swir.vrt
+	./functions.sh ndwi_river  $(WORKDIR)/green.vrt $(WORKDIR)/nir.vrt $(WORKDIR)/swir.vrt $@
 
 #	saga_cmd --flags=s grid_calculus 1 -GRIDS $(WORKDIR)/green.vrt\;$(WORKDIR)/nir.vrt -RESULT $@ -FORMULA "gt((g1-g2+0.001)/(g1+g2+0.001),$(NDWI_THRESHOLD))" -TYPE 1
 
@@ -30,9 +31,15 @@ $(NDWI_RIVER_SHP): $(NDWI_RIVER) $(TARGET_EXTENT)
 	./functions.sh rast2poly $(WORKDIR)/ndwi_cut.vrt 1 $@
 #	saga_cmd --flags=s shapes_grid 6 -GRID $(WORKDIR)/ndwi_cut.vrt -POLYGONS $@ -CLASS_ALL 0 -CLASS_ID 1 -SPLIT 1 # --flags=s
 
-$(RIVER_LINE): #$(RIVER_EXTENT)
+ifeq ($(NDWI_ONLY),TRUE)
+$(RIVER_LINE): $(NDWI_RIVER)
+	mkdir -p `dirname $@`
+	if [ `ogrinfo $(RIVER_EXTENT) -al -summary | grep "Feature Count" | cut -f 3 -d " "` -gt 0 ]; then ./functions.sh centerline $< $@; fi
+else
+$(RIVER_LINE): $(RIVER_EXTENT)
 	mkdir -p `dirname $@`
 	if [ `ogrinfo $(RIVER_EXTENT) -al -summary | grep "Feature Count" | cut -f 3 -d " "` -gt 0 ]; then ./functions.sh centerline $(RIVER_EXTENT) $@; fi
+endif
 
 $(RIVER_LINE_DIST): #$(RIVER_EXTENT)
 	mkdir -p `dirname $@`
