@@ -57,8 +57,6 @@ function centerline(){
     cat > $GRASS_SCRIPT <<EOF
     r.external input=$WORKDIR/rast.tif output=rast --overwrite
     g.region raster=rast $GRASS_OPT
-    #r.buffer -z input=rast output=buf distances=100 --overwrite
-    #r.mapcalc "buf_reclass = if(buf > 0, 1, null())"
     r.out.gdal input=buf output=$WORKDIR/buf.tif type=Byte createopt=COMPRESS=Deflate $GRASS_OPT
 EOF
     chmod u+x $GRASS_SCRIPT
@@ -69,7 +67,7 @@ EOF
     export PROJ_LIB=/usr/share/proj/
     grass -c $WORKDIR/temploc --exec $PWD/raster2polyline.sh $WORKDIR/skeleton.tif  $WORKDIR/vect.gpkg
     /usr/bin/ogr2ogr -a_srs EPSG:3857 -f "ESRI Shapefile" $OUT_LINE $WORKDIR/vect.gpkg
-    #rm -rf $WORKDIR
+    rm -rf $WORKDIR
 
 }
 export -f centerline
@@ -163,7 +161,7 @@ function ndwi_river() {
     r.external input=$IN_GREEN output=green --overwrite
     r.external input=$IN_NIR output=nir --overwrite
     g.region raster=green $GRASS_OPT
-    r.mapcalc expression="river = (green-nir+0.001)/(green+nir+0.001) > -0.05 " --overwrite
+    r.mapcalc expression="river = (green-nir+0.001)/(green+nir+0.001) > $NDWI_THRESHOLD " --overwrite
     r.out.gdal input=river output=$OUT type=Byte createopt=COMPRESS=Deflate $GRASS_OPT
 EOF
     chmod u+x $GRASS_SCRIPT

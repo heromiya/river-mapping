@@ -29,7 +29,7 @@ function exec() {
 	export SWIR=6
 	export SCALE="3000 30000"
 	export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
-	export NDWI_THRESHOLD=0
+	export NDWI_THRESHOLD=-0.05
     elif [ $YEAR -ge 1988 ]; then
 	export GREEN=2
 	export RED=3
@@ -37,7 +37,7 @@ function exec() {
 	export SWIR=5
 	export SCALE="3000 30000"
 	export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
-	export NDWI_THRESHOLD=0
+	export NDWI_THRESHOLD=-0.05
     else
 	export GREEN=1
 	export RED=2
