@@ -55,11 +55,11 @@ function centerline(){
     fi
     
     cat > $GRASS_SCRIPT <<EOF
-    r.external input=$WORKDIR/rast.tif output=rast --overwrite
+    r.external input=$WORKDIR/rast.tif output=rast $GRASS_OPT
     g.region raster=rast $GRASS_OPT
-    r.null map=rast null=0 --overwrite
-    r.neighbors -c input=rast output=out method=mode size=$MODE_FILTER_SIZE --overwrite
-    r.out.gdal input=out output=$WORKDIR/rast.tif type=Byte createopt=COMPRESS=Deflate nodata=0 $GRASS_OPT --overwrite
+    r.null map=rast null=0 $GRASS_OPT
+    r.neighbors -c input=rast output=out method=mode size=$MODE_FILTER_SIZE $GRASS_OPT
+    r.out.gdal input=out output=$WORKDIR/rast.tif type=Byte createopt=COMPRESS=Deflate nodata=0 $GRASS_OPT $GRASS_OPT
 EOF
     chmod u+x $GRASS_SCRIPT
     export PROJ_LIB=/usr/share/proj/
@@ -134,11 +134,11 @@ function identify_major_stream(){
     OUT_LINE=$2
     GRASS_OPT="--overwrite"
     cat > $GRASS_SCRIPT <<EOF
-    r.external input=$IN_DIST output=dist --overwrite
+    r.external input=$IN_DIST output=dist $GRASS_OPT
     g.region raster=dist $GRASS_OPT
-    r.mapcalc expression="cost_sur = 1000000 / (dist + 1)^5" --overwrite
-    r.cost -kb input=cost_sur output=cost start_coordinates=10082459.73,3025052.87 outdir=dir --overwrite
-    r.path input=dir format=auto vector_path=path start_coordinates=10113912.32,2582622.93 --overwrite
+    r.mapcalc expression="cost_sur = 1000000 / (dist + 1)^5" $GRASS_OPT
+    r.cost -kb input=cost_sur output=cost start_coordinates=10082459.73,3025052.87 outdir=dir $GRASS_OPT
+    r.path input=dir format=auto vector_path=path start_coordinates=10113912.32,2582622.93 $GRASS_OPT
     v.out.ogr input=path type=line output=$OUT_LINE format=ESRI_Shapefile $GRASS_OPT
 EOF
     chmod u+x $GRASS_SCRIPT
@@ -158,12 +158,17 @@ function ndwi_river() {
     IN_NIR=$2
     IN_SWIR=$3
     OUT=$4
+    NDWI0=NDWI0.gpkg
+    ogr2ogr -t_srs EPSG:3857 $WORKDIR/NDWI0.gpkg $NDWI0
     GRASS_OPT="--overwrite"
     cat > $GRASS_SCRIPT <<EOF
-    r.external input=$IN_GREEN output=green --overwrite
-    r.external input=$IN_NIR output=nir --overwrite
+    r.external input=$IN_GREEN output=green $GRASS_OPT
+    r.external input=$IN_NIR output=nir $GRASS_OPT
     g.region raster=green $GRASS_OPT
-    r.mapcalc expression="river = (green-nir+0.001)/(green+nir+0.001) > $NDWI_THRESHOLD " --overwrite
+    v.in.ogr input=$WORKDIR/NDWI0.gpkg output=ndvi0_vec $GRASS_OPT
+    v.to.rast input=ndvi0_vec output=ndvi0 use=val value=1 $GRASS_OPT
+    r.null map=ndvi0 null=0 $GRASS_OPT
+    r.mapcalc expression="river = if(ndvi0==1, (green-nir+0.001)/(green+nir+0.001) > $NDWI_THRESHOLD_1, (green-nir+0.001)/(green+nir+0.001) > $NDWI_THRESHOLD_2) " $GRASS_OPT
     r.out.gdal input=river output=$OUT type=Byte createopt=COMPRESS=Deflate $GRASS_OPT
 EOF
     chmod u+x $GRASS_SCRIPT
@@ -184,7 +189,7 @@ function rast2poly () {
     OUT=$3
     GRASS_OPT="--overwrite"
     cat > $GRASS_SCRIPT <<EOF
-    r.external input=$IN output=in --overwrite
+    r.external input=$IN output=in $GRASS_OPT
     g.region raster=in $GRASS_OPT
     #r.null map=in setnull=0 $GRASS_OPT
     r.mask raster=in maskcats=$VALUE
