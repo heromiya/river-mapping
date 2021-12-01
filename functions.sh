@@ -41,7 +41,7 @@ function centerline(){
     if [ $NDWI_ONLY = 'TRUE' ]; then
 	#cp $IN  $WORKDIR/rast.tif
 	gdalwarp -multi -cutline $TARGET_EXTENT -dstnodata 0 $IN $WORKDIR/rast.tif
-	gdal_sieve.py -q -8 -st $CENTERLINE_THRESHOLD $WORKDIR/rast.tif $WORKDIR/sieved.tif
+	#gdal_sieve.py -q -8 -st $CENTERLINE_THRESHOLD $WORKDIR/rast.tif $WORKDIR/sieved.tif
 	
     else
 	if [ $YEAR -ge 1984 ]; then
@@ -55,10 +55,10 @@ function centerline(){
     fi
     
     cat > $GRASS_SCRIPT <<EOF
-    r.external input=$WORKDIR/sieved.tif output=rast --overwrite
+    r.external input=$WORKDIR/rast.tif output=rast --overwrite
     g.region raster=rast $GRASS_OPT
     r.null map=rast null=0 --overwrite
-    r.neighbors input=rast output=out method=mode size=3 --overwrite
+    r.neighbors -c input=rast output=out method=mode size=$MODE_FILTER_SIZE --overwrite
     r.out.gdal input=out output=$WORKDIR/rast.tif type=Byte createopt=COMPRESS=Deflate nodata=0 $GRASS_OPT --overwrite
 EOF
     chmod u+x $GRASS_SCRIPT

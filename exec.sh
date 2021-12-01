@@ -59,7 +59,7 @@ function exec() {
 
     export PRED_RIVER_SHP=$OUTPUT_BASEDIR/river_segment.shp.d/$BASENAME.$(basename $MODEL_FILE).shp
     export RIVER_EXTENT=$OUTPUT_BASEDIR/ndwi_river.extract.shp.d/median/$MQ/$YEAR/$BASENAME.ndwi_river.extract.shp
-    export RIVER_LINE=$OUTPUT_BASEDIR/ndwi_river.extract.line.shp.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.shp
+    export RIVER_LINE=$OUTPUT_BASEDIR/ndwi_river.extract.line.shp.mode${MODE_FILTER_SIZE}.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.shp
     export RIVER_LINE_DIST=$OUTPUT_BASEDIR/ndwi_river.extract.line.dist.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.dist.tif
     export RIVER_MAJOR_STREAM=$OUTPUT_BASEDIR/ndwi_river.major_stream.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).major_stream.shp
     
