@@ -14,7 +14,6 @@ $(PRED_RIVER_SHP): $(PRED_RIVER_RAS)
 	mkdir -p `dirname $@`
 	gdalwarp -of VRT -cutline $(TARGET_EXTENT) $< $(WORKDIR)/cut.vrt
 	./functions.sh rast2poly $(WORKDIR)/cut.vrt 255 $@
-#	saga_cmd --flags=s shapes_grid 6 -GRID $< -POLYGONS $@ -CLASS_ALL 0 -CLASS_ID 255 -SPLIT 1
 
 $(NDWI_RIVER): $(IN_LANDSAT)
 	mkdir -p `dirname $@`
@@ -23,13 +22,10 @@ $(NDWI_RIVER): $(IN_LANDSAT)
 	gdal_translate -of VRT -b $(SWIR) $<  $(WORKDIR)/swir.vrt
 	./functions.sh ndwi_river  $(WORKDIR)/green.vrt $(WORKDIR)/nir.vrt $(WORKDIR)/swir.vrt $@
 
-#	saga_cmd --flags=s grid_calculus 1 -GRIDS $(WORKDIR)/green.vrt\;$(WORKDIR)/nir.vrt -RESULT $@ -FORMULA "gt((g1-g2+0.001)/(g1+g2+0.001),$(NDWI_THRESHOLD))" -TYPE 1
-
 $(NDWI_RIVER_SHP): $(NDWI_RIVER) $(TARGET_EXTENT)
 	mkdir -p `dirname $@`
 	gdalwarp -of VRT -cutline $(TARGET_EXTENT) -co COMPRESS=Deflate $< $(WORKDIR)/ndwi_cut.vrt
 	./functions.sh rast2poly $(WORKDIR)/ndwi_cut.vrt 1 $@
-#	saga_cmd --flags=s shapes_grid 6 -GRID $(WORKDIR)/ndwi_cut.vrt -POLYGONS $@ -CLASS_ALL 0 -CLASS_ID 1 -SPLIT 1 # --flags=s
 
 ifeq ($(NDWI_ONLY),TRUE)
 $(RIVER_LINE): $(NDWI_RIVER)
