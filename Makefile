@@ -34,7 +34,7 @@ $(NDWI_RIVER_SHP): $(NDWI_RIVER) $(TARGET_EXTENT)
 ifeq ($(NDWI_ONLY),TRUE)
 $(RIVER_LINE): $(NDWI_RIVER)
 	mkdir -p `dirname $@`
-	if [ `ogrinfo $(RIVER_EXTENT) -al -summary | grep "Feature Count" | cut -f 3 -d " "` -gt 0 ]; then ./functions.sh centerline $< $@; fi
+	./functions.sh centerline $< $@
 else
 $(RIVER_LINE): $(RIVER_EXTENT)
 	mkdir -p `dirname $@`
