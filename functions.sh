@@ -149,7 +149,6 @@ EOF
 }
 export -f identify_major_stream
 
-
 function ndwi_river() {
     WORKDIR=$(mktemp -d)
     GRASS_SCRIPT=$WORKDIR/grass.sh
@@ -177,8 +176,6 @@ EOF
     rm -rf $WORKDIR
 
 }
-#&& (nir-swir+0.001)/(nir+swir+0.001) > -0.01 
-#    r.external input=$IN_SWIR output=swir --overwrite
 
 function rast2poly () {
     WORKDIR=$(mktemp -d)
@@ -203,8 +200,5 @@ EOF
     rm -rf $WORKDIR
     
 }
-
-
-
 
 $1 $2 $3 $4 $5 $6 $7 $8 $9
