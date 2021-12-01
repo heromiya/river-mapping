@@ -51,7 +51,7 @@ function centerline(){
 	fi
 
 	gdal_rasterize -q -burn 1 -tr $tres $tres $IN $WORKDIR/rast.tif
-	gdal_sieve.py -q 8 -st $(CENTERLINE_THRESHOLD) $WORKDIR/rast.tif
+	#gdal_sieve.py -q -8 -st $CENTERLINE_THRESHOLD $WORKDIR/rast.tif
     fi
     
     cat > $GRASS_SCRIPT <<EOF
