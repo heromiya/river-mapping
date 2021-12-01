@@ -29,7 +29,8 @@ function exec() {
 	export SWIR=6
 	export SCALE="3000 30000"
 	export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
-	export NDWI_THRESHOLD=-0.05
+	export NDWI_THRESHOLD_1=0
+	export NDWI_THRESHOLD_2=-0.05
     elif [ $YEAR -ge 1988 ]; then
 	export GREEN=2
 	export RED=3
@@ -37,7 +38,9 @@ function exec() {
 	export SWIR=5
 	export SCALE="3000 30000"
 	export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
-	export NDWI_THRESHOLD=-0.05
+	export NDWI_THRESHOLD_1=0
+	export NDWI_THRESHOLD_2=-0.05
+
     else
 	export GREEN=1
 	export RED=2
@@ -45,7 +48,9 @@ function exec() {
 	export SWIR=4
 	export SCALE="30 90"	
 	export MODEL_FILE=checkpoint/FPN_epoch_400_Nov23_16_05.pth
-	export NDWI_THRESHOLD=0.2
+	#export NDWI_THRESHOLD=0.2
+	export NDWI_THRESHOLD_1=0.2
+	export NDWI_THRESHOLD_2=0.2
     fi
 
     export PRED_RIVER_RAS=$OUTPUT_BASEDIR/river_segment.pred.d/$(basename $IN_LANDSAT).$(basename $MODEL_FILE).tif
