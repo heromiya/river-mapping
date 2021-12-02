@@ -99,8 +99,8 @@ export -f riverwidth
 function map_output_river(){
     WORKDIR=$(mktemp -d)
     
-    EXTENT_SHP=$(echo $1 | sed 's/\//\\\//g')
-    LINE_SHP=$(echo $2 | sed 's/\//\\\//g')
+    EXTENT_SHP=$(echo $PWD/$1 | sed 's/\//\\\//g')
+    LINE_SHP=$(echo $PWD/$2 | sed 's/\//\\\//g')
 
     PERIOD=$(basename $LINE_SHP | sed 's/\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\)-.*/\1/g') #2021-01-03
 

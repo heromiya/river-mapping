@@ -13,8 +13,8 @@ function exec() {
     export IN_LANDSAT=$1
     export YEAR=$(echo $IN_LANDSAT | sed 's/.*\([0-9]\{4\}\)-.*tif/\1/g')
 
-    M1=$(echo $PERIOD | sed 's/.*[0-9]\{4\}-\([0-9]\{2\}\)-\([0-9]\{2\}\).*/\1/g')
-    M2=$(echo $PERIOD | sed 's/.*[0-9]\{4\}-\([0-9]\{2\}\)-\([0-9]\{2\}\).*/\2/g')
+    M1=$(echo $IN_LANDSAT | sed 's/.*[0-9]\{4\}-\([0-9]\{2\}\)-\([0-9]\{2\}\).*/\1/g')
+    M2=$(echo $IN_LANDSAT | sed 's/.*[0-9]\{4\}-\([0-9]\{2\}\)-\([0-9]\{2\}\).*/\2/g')
     if [ M1 = M2 ]; then
 	MQ=monthly
     else
@@ -67,8 +67,10 @@ function exec() {
     export RIVER_LINE=$OUTPUT_BASEDIR/ndwi_river.extract.line.shp.mode${MODE_FILTER_SIZE}.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.shp
     export RIVER_LINE_DIST=$OUTPUT_BASEDIR/ndwi_river.extract.line.dist.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.dist.tif
     export RIVER_MAJOR_STREAM=$OUTPUT_BASEDIR/ndwi_river.major_stream.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).major_stream.shp
+
+    export MAP_OUTPUT_RIVER=$OUTPUT_BASEDIR/map_output.d/$MQ/$YEAR/$YEAR-$M1-$M2-map_output.png
     
-    make -r $NDWI_RIVER_SHP $RIVER_LINE #$NDWI_RIVER_SHP #$RIVER_EXTENT #$RIVER_MAJOR_STREAM
+    make -r $NDWI_RIVER_SHP $RIVER_LINE $MAP_OUTPUT_RIVER #$NDWI_RIVER_SHP #$RIVER_EXTENT #$RIVER_MAJOR_STREAM
     rm -rf $WORKDIR
 }
 export -f exec
