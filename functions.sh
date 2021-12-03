@@ -59,7 +59,7 @@ function centerline(){
     g.region raster=rast $GRASS_OPT
     r.null map=rast null=0 $GRASS_OPT
     r.neighbors -c input=rast output=out method=mode size=$MODE_FILTER_SIZE $GRASS_OPT
-    r.out.gdal input=out output=$WORKDIR/rast.tif type=Byte createopt=COMPRESS=Deflate nodata=0 $GRASS_OPT $GRASS_OPT
+    r.out.gdal -f input=out output=$WORKDIR/rast.tif type=Byte createopt=COMPRESS=Deflate nodata=0 $GRASS_OPT
 EOF
     chmod u+x $GRASS_SCRIPT
     export PROJ_LIB=/usr/share/proj/
