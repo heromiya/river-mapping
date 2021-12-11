@@ -15,14 +15,29 @@ function exec() {
 
     M1=$(echo $IN_LANDSAT | sed 's/.*[0-9]\{4\}-\([0-9]\{2\}\)-\([0-9]\{2\}\).*/\1/g')
     M2=$(echo $IN_LANDSAT | sed 's/.*[0-9]\{4\}-\([0-9]\{2\}\)-\([0-9]\{2\}\).*/\2/g')
-    if [ M1 = M2 ]; then
+    if [ $M1 = $M2 ]; then
 	MQ=monthly
     else
 	MQ=quarterly
     fi
+
+    if   [ $(date -d $YEAR-$M2-01 +%s) -gt $(date -d "18 March 2013" +%s) ]; then
+	LANDSAT=LC
+    elif [ $(date -d $YEAR-$M2-01 +%s) -gt $(date -d "11 November 2011" +%s) ]; then
+	LANDSAT=LE
+    elif [ $(date -d $YEAR-$M2-01 +%s) -gt $(date -d "31 May 2003" +%s) ]; then
+	LANDSAT=LT
+    elif [ $(date -d $YEAR-$M2-01 +%s) -gt $(date -d "15 April 1999" +%s) ]; then
+	LANDSAT=LE
+    elif [ $(date -d $YEAR-$M2-01 +%s) -gt $(date -d "1 March 1984" +%s) ]; then
+	LANDSAT=LT
+    else
+	LANDSAT=LM
+    fi
+    
     
     export WORKDIR=$(mktemp -d)
-    if [ $YEAR -ge 2014 ]; then
+    if [ $LANDSAT = LC ]; then
 	export GREEN=3
 	export RED=4
 	export NIR=5
@@ -31,7 +46,7 @@ function exec() {
 	export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
 	export NDWI_THRESHOLD_1=0
 	export NDWI_THRESHOLD_2=-0.05
-    elif [ $YEAR -ge 1988 ]; then
+    elif [ $LANDSAT = LE -o $LANDSAT=LT ]; then
 	export GREEN=2
 	export RED=3
 	export NIR=4
@@ -74,7 +89,7 @@ function exec() {
     rm -rf $WORKDIR
 }
 export -f exec
-#exec monthly_mosaic/1994-01-03-cloudfree-median.tif
+#exec monthly_mosaic/cloudfree-median.tif.d/monthly/2013-04-04-cloudfree-median.tif
 #parallel exec ::: $(find monthly_mosaic/ -type f -regex ".*median.*tif$")
 #./copyProductsForDelivery.sh
 parallel --results logs/$0.$(date +%F_%T)parallel.log.d --bar -j$N_JOBS exec :::: $INPUTS_LIST
