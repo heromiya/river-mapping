@@ -171,7 +171,7 @@ function ndwi_river() {
     v.to.rast input=ndwi0_vec output=ndwi0 use=val value=1 $GRASS_OPT
     r.null map=ndwi0 null=0 $GRASS_OPT
 
-    r.mapcalc expression="river = if(ndwi0==1, (green-nir+0.1)/(green+nir+0.1) > $NDWI_THRESHOLD_1, (green-nir+0.1)/(green+nir+0.1) > $NDWI_THRESHOLD_2) " $GRASS_OPT
+    r.mapcalc expression="river = if(green > 20000, null(), if(ndwi0==1, (green-nir+0.1)/(green+nir+0.1) > $NDWI_THRESHOLD_1, (green-nir+0.1)/(green+nir+0.1) > $NDWI_THRESHOLD_2)) " $GRASS_OPT
     r.out.gdal input=river output=$OUT type=Byte createopt=COMPRESS=Deflate $GRASS_OPT
 EOF
     chmod u+x $GRASS_SCRIPT
