@@ -37,9 +37,13 @@ $(RIVER_LINE): $(RIVER_EXTENT)
 	if [ `ogrinfo $(RIVER_EXTENT) -al -summary | grep "Feature Count" | cut -f 3 -d " "` -gt 0 ]; then ./functions.sh centerline $(RIVER_EXTENT) $@; fi
 endif
 
-$(RIVER_LINE_DIST): #$(RIVER_EXTENT)
+$(RIVER_LINE_DIST_RAST): $(RIVER_EXTENT)
 	mkdir -p `dirname $@`
 	if [ `ogrinfo $(RIVER_EXTENT) -al -summary | grep "Feature Count" | cut -f 3 -d " "` -gt 0 ]; then ./functions.sh riverwidth $(RIVER_EXTENT) $@; fi
+
+$(RIVER_LINE_DIST_VECT): $(RIVER_LINE_DIST_RAST)
+	mkdir -p `dirname $@`
+	./functions.sh raster2polyline $< $@
 
 $(RIVER_MAJOR_STREAM): $(RIVER_LINE_DIST)
 	mkdir -p `dirname $@`

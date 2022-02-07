@@ -46,7 +46,7 @@ function exec() {
 	export MODEL_FILE=checkpoint/FPN_epoch_200_Dec24_19_15.pth
 	export NDWI_THRESHOLD_1=0
 	export NDWI_THRESHOLD_2=-0.05
-    elif [ $LANDSAT = LE -o $LANDSAT=LT ]; then
+    elif [ $LANDSAT = LE -o $LANDSAT = LT ]; then
 	export GREEN=2
 	export RED=3
 	export NIR=4
@@ -80,12 +80,13 @@ function exec() {
     export PRED_RIVER_SHP=$OUTPUT_BASEDIR/river_segment.shp.d/$BASENAME.$(basename $MODEL_FILE).shp
     export RIVER_EXTENT=$OUTPUT_BASEDIR/ndwi_river.extract.shp.d/median/$MQ/$YEAR/$BASENAME.ndwi_river.extract.shp
     export RIVER_LINE=$OUTPUT_BASEDIR/ndwi_river.extract.line.shp.mode${MODE_FILTER_SIZE}.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.shp
-    export RIVER_LINE_DIST=$OUTPUT_BASEDIR/ndwi_river.extract.line.dist.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.dist.tif
+    export RIVER_LINE_DIST_RAST=$OUTPUT_BASEDIR/ndwi_river.extract.line.dist.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.dist.tif
+    export RIVER_LINE_DIST_VECT=$OUTPUT_BASEDIR/ndwi_river.extract.line.dist.vect.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).line.dist.shp
     export RIVER_MAJOR_STREAM=$OUTPUT_BASEDIR/ndwi_river.major_stream.d/$MQ/$YEAR/$(basename $RIVER_EXTENT).major_stream.shp
 
     export MAP_OUTPUT_RIVER=$OUTPUT_BASEDIR/map_output.d/$MQ/$YEAR/$YEAR-$M1-$M2-map_output.png
     
-    make -r $NDWI_RIVER_SHP $RIVER_LINE $MAP_OUTPUT_RIVER #$NDWI_RIVER_SHP #$RIVER_EXTENT #$RIVER_MAJOR_STREAM
+    make -r $NDWI_RIVER_SHP $MAP_OUTPUT_RIVER $RIVER_LINE_DIST_VECT #$NDWI_RIVER_SHP #$RIVER_EXTENT #$RIVER_MAJOR_STREAM
     rm -rf $WORKDIR
 }
 export -f exec
@@ -93,3 +94,4 @@ export -f exec
 #parallel exec ::: $(find monthly_mosaic/ -type f -regex ".*median.*tif$")
 #./copyProductsForDelivery.sh
 parallel --results logs/$0.$(date +%F_%T)parallel.log.d --bar -j$N_JOBS exec :::: $INPUTS_LIST
+#for INPUT in $(head -n 1 $INPUTS_LIST); do exec $INPUT; done

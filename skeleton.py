@@ -11,7 +11,8 @@ outfile = sys.argv[3]
 img = rasterio.open(infile)
 array = img.read(1)
 if mode == 'skel':
-    out = skeletonize(array, method='lee')
+#    out = skeletonize(array, method='lee')
+    out = medial_axis(array, return_distance=False)
 if mode == 'dist':
     skel, dist = medial_axis(array, return_distance=True)
     out = dist * skel

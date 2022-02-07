@@ -78,6 +78,73 @@ function riverwidth(){
     IN=$1
     OUT_DIST=$2
     WORKDIR=$(mktemp -d)
+    GRASS_SCRIPT=$WORKDIR/grass.sh
+
+    YEAR=$(basename $IN | sed 's/^\([0-9]\{4\}\).*/\1/g')
+
+    if [ $NDWI_ONLY = 'TRUE' ]; then
+	#cp $IN  $WORKDIR/rast.tif
+	gdalwarp -multi -cutline $TARGET_EXTENT -dstnodata 0 $IN $WORKDIR/rast.tif
+	#gdal_sieve.py -q -8 -st $CENTERLINE_THRESHOLD $WORKDIR/rast.tif $WORKDIR/sieved.tif
+	
+    else
+	if [ $YEAR -ge 1984 ]; then
+	    tres=30
+	else
+	    tres=60
+	fi
+
+	gdal_rasterize -q -burn 1 -tr $tres $tres $IN $WORKDIR/rast.tif
+	#gdal_sieve.py -q -8 -st $CENTERLINE_THRESHOLD $WORKDIR/rast.tif
+    fi
+    
+    cat > $GRASS_SCRIPT <<EOF
+    r.external input=$WORKDIR/rast.tif output=rast $GRASS_OPT
+    g.region raster=rast $GRASS_OPT
+    r.null map=rast null=0 $GRASS_OPT
+    r.neighbors -c input=rast output=out method=mode size=$MODE_FILTER_SIZE $GRASS_OPT
+    r.out.gdal -f input=out output=$WORKDIR/rast.tif type=Byte createopt=COMPRESS=Deflate nodata=0 $GRASS_OPT
+EOF
+    chmod u+x $GRASS_SCRIPT
+    export PROJ_LIB=/usr/share/proj/
+    grass78 -c EPSG:3857 --tmp-location --exec sh $GRASS_SCRIPT
+
+    python skeleton.py $WORKDIR/rast.tif dist $OUT_DIST # $WORKDIR/skeleton.tif
+    #export PROJ_LIB=/usr/share/proj/
+    #grass -c $WORKDIR/temploc --exec $PWD/raster2polyline.sh $WORKDIR/skeleton.tif  $WORKDIR/vect.gpkg
+    #/usr/bin/ogr2ogr -a_srs EPSG:3857 -f "ESRI Shapefile" $OUT_DIST $WORKDIR/vect.gpkg
+    #rm -rf $WORKDIR
+
+}
+
+
+function raster2polyline(){
+    IN=$1
+    OUT_LINE=$2
+    WORKDIR=$(mktemp -d)
+    GRASS_SCRIPT=$WORKDIR/grass.sh
+    GRASS_OPT="--overwrite --quiet"
+
+    cat > $GRASS_SCRIPT <<EOF
+r.in.gdal -oe input=$IN output=rast $GRASS_OPT #skeleton-lee.tif
+g.region raster=rast $GRASS_OPT
+r.null map=rast setnull=0 $GRASS_OPT
+r.thin input=rast output=rast.thin $GRASS_OPT
+r.to.vect -sv input=rast.thin output=vect type=line $GRASS_OPT
+v.out.ogr input=vect type=line output=$OUT_LINE format=ESRI_Shapefile $GRASS_OPT
+EOF
+
+    chmod u+x $GRASS_SCRIPT
+    export PROJ_LIB=/usr/share/proj/
+    grass78 -c EPSG:3857 --tmp-location --exec sh $GRASS_SCRIPT
+    
+}
+
+
+function riverwidth.old(){
+    IN=$1
+    OUT_DIST=$2
+    WORKDIR=$(mktemp -d)
 
     YEAR=$(basename $IN | sed 's/^\([0-9]\{4\}\).*/\1/g')
 
