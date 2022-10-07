@@ -93,5 +93,6 @@ export -f exec
 #exec monthly_mosaic/cloudfree-median.tif.d/monthly/2013-04-04-cloudfree-median.tif
 #parallel exec ::: $(find monthly_mosaic/ -type f -regex ".*median.*tif$")
 #./copyProductsForDelivery.sh
-parallel --results logs/$0.$(date +%F_%T)parallel.log.d --bar -j$N_JOBS exec :::: $INPUTS_LIST
+#parallel --results logs/$0.$(date +%F_%T)parallel.log.d --bar -j$N_JOBS exec :::: $INPUTS_LIST
 #for INPUT in $(head -n 1 $INPUTS_LIST); do exec $INPUT; done
+exec monthly_mosaic/cloudfree-median.tif.d/quarterly/2022-01-03-cloudfree-median.tif

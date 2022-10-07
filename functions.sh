@@ -224,7 +224,7 @@ function ndwi_river() {
     IN_NIR=$2
     IN_SWIR=$3
     OUT=$4
-    NDWI0=NDWI0.gpkg
+    NDWI0=NDWI0.gml
     ogr2ogr -t_srs EPSG:3857 $WORKDIR/NDWI0.gpkg $NDWI0
     GRASS_OPT="--overwrite"
     cat > $GRASS_SCRIPT <<EOF
