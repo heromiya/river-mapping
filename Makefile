@@ -1,7 +1,7 @@
 $(PRED_RIVER_RAS): $(IN_LANDSAT)
 	mkdir -p `dirname $@`
 	gdal_translate -q -projwin 9792564.318951 3052509.123221 10202099.960504 2449237.328724 -of VRT -b $(RED) -b $(SWIR) -b $(NIR) -scale $(SCALE) -co COMPRESS=Deflate $< $(WORKDIR)/band_subset.vrt
-	parallel -j1 gdal_fillnodata.py -q -b {} $(WORKDIR)/band_subset.vrt $(WORKDIR)/band_subset.filled.{}.tif ::: 1 2 3
+	parallel gdal_fillnodata.py -q -b {} $(WORKDIR)/band_subset.vrt $(WORKDIR)/band_subset.filled.{}.tif ::: 1 2 3
 	gdal_merge.py -q -separate -o $(WORKDIR)/band_subset.filled.tif -of GTIFF -co COMPRESS=Deflate $(WORKDIR)/band_subset.filled.*.tif
 	sleep `echo $$$$ % 120 | bc` && while [ `ps aux | grep predict_auto.py | grep -v grep | wc -l` -gt 1 ]; do sleep 60; done && \
 	export LD_LIBRARY_PATH=/home/heromiya/miniconda3/lib && $(PYTHON) predict_auto.py -test_img $(WORKDIR)/band_subset.filled.tif -checkpoint $(MODEL_FILE) -test_pred $@ -batch_size $(BATCH_SIZE) -img_cols $(COLS) -img_rows $(ROWS)
